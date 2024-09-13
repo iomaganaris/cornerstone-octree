@@ -180,9 +180,13 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         // now we have bits[0] == bits[1] == bits[2]
     }
 
+    // Assert that the 3D coordinates of the 2 largest dimensions are smaller than the allowed range of the min
+    // dimension to ensure that the first 3 * (bits[0] - bits[2]) bits are 0
+    assert(sorted_coordinates[0] < (1u << bits[2]));
+    assert(sorted_coordinates[1] < (1u << bits[2]));
+
     // encode remaining bits[0] == min(bx,by,bz) 3D levels or octal digits with 3D-Hilbert and add to key
-    const KeyType key_3D =
-        iHilbert<KeyType>(sorted_coordinates[0], sorted_coordinates[1], sorted_coordinates[2], bits[0]);
+    const KeyType key_3D = iHilbert<KeyType>(sorted_coordinates[0], sorted_coordinates[1], sorted_coordinates[2]);
     key |= key_3D;
     // Example for (bx,by,bz) = (10,9,7): 1D,2D,2D,3D*7
 
@@ -648,7 +652,7 @@ decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
         key &= (1u << (3 * bits[2])) - 1;
     }
 
-    const auto pair_3D = decodeHilbert<KeyType>(key, bits[2]);
+    const auto pair_3D = decodeHilbert<KeyType>(key);
     coordinates[0] |= get<0>(pair_3D);
     coordinates[1] |= get<1>(pair_3D);
     coordinates[2] |= get<2>(pair_3D);
