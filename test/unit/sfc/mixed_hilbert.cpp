@@ -189,8 +189,8 @@ TEST(MixedHilbertEncoding, InversionTest2D3D)
 template<class KeyType>
 void inversionTestMixD()
 {
-    int numKeys{1};
-    std::vector<std::vector<unsigned>> n_encoding_bits_sweep = {{8, 6, 10}};
+    int numKeys{10};
+    std::vector<std::vector<unsigned>> n_encoding_bits_sweep = {{8, 6, 10}, {10, 9, 9}, {10, 10, 10}, {10, 10, 9}};
     std::mt19937 gen;
     for (const auto& n_encoding_bits : n_encoding_bits_sweep)
     {
@@ -216,9 +216,9 @@ void inversionTestMixD()
                 iHilbertMixD<KeyType>(x[i], y[i], z[i], n_encoding_bits[0], n_encoding_bits[1], n_encoding_bits[2]);
 
             auto [a, b, c] = decodeHilbertMixD(hilbertKey, n_encoding_bits[0], n_encoding_bits[1], n_encoding_bits[2]);
-            // EXPECT_EQ(x[i], a);
-            // EXPECT_EQ(y[i], b);
-            // EXPECT_EQ(z[i], c);
+            EXPECT_EQ(x[i], a);
+            EXPECT_EQ(y[i], b);
+            EXPECT_EQ(z[i], c);
         };
     }
 }
