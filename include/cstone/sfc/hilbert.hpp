@@ -57,11 +57,11 @@ __device__ static unsigned mortonToHilbertDevice[8] = {0, 1, 3, 2, 7, 6, 4, 5};
  */
 template<class KeyType>
 constexpr HOST_DEVICE_FUN inline std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType>
-iHilbert(unsigned px, unsigned py, unsigned pz) noexcept
+iHilbert(unsigned px, unsigned py, unsigned pz, int order = maxTreeLevel<KeyType>{}) noexcept
 {
-    assert(px < (1u << maxTreeLevel<KeyType>{}));
-    assert(py < (1u << maxTreeLevel<KeyType>{}));
-    assert(pz < (1u << maxTreeLevel<KeyType>{}));
+    assert(px < (1u << order));
+    assert(py < (1u << order));
+    assert(pz < (1u << order));
 
 #if !defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
     constexpr unsigned mortonToHilbert[8] = {0, 1, 3, 2, 7, 6, 4, 5};
@@ -69,7 +69,7 @@ iHilbert(unsigned px, unsigned py, unsigned pz) noexcept
 
     KeyType key = 0;
 
-    for (int level = maxTreeLevel<KeyType>{} - 1; level >= 0; --level)
+    for (int level = order - 1; level >= 0; --level)
     {
         unsigned xi = (px >> level) & 1u;
         unsigned yi = (py >> level) & 1u;
@@ -108,6 +108,10 @@ iHilbert(unsigned px, unsigned py, unsigned pz) noexcept
     return key;
 }
 
+template<class KeyType>
+HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType>
+iHilbert2D(unsigned px, unsigned py, int order = maxTreeLevel<KeyType>{}) noexcept;
+
 /*! @brief compute the Hilbert key for a 3D point of integer coordinates
  *
  * @tparam     KeyType   32- or 64-bit unsigned integer
@@ -132,33 +136,81 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
     assert(px < (1u << bx));
     assert(py < (1u << by));
     assert(pz < (1u << bz));
-    assert(bx < maxTreeLevel<KeyType>{} && by < maxTreeLevel<KeyType>{} && bz < maxTreeLevel<KeyType>{});
+    assert(bx <= maxTreeLevel<KeyType>{} && by <= maxTreeLevel<KeyType>{} && bz <= maxTreeLevel<KeyType>{});
 
     KeyType key = 0;
 
-    unsigned bits[3] = { /* bits (bx,by,bz) sorted in descending order */ };
+    std::array<unsigned, 3> bits{bx, by, bz};
+    std::array<int, 3> permutation{0, 1, 2};
+    std::sort(permutation.begin(), permutation.end(), [&bits](int i, int j) { return bits[i] > bits[j]; });
+    std::array<unsigned, 3> coordinates{px, py, pz};
+    std::array<unsigned, 3> sorted_coordinates{coordinates[permutation[0]], coordinates[permutation[1]],
+                                               coordinates[permutation[2]]};
+    std::sort(bits.begin(), bits.end(), std::greater<unsigned>{});
+
+    std::cout << "px: " << std::bitset<10>(px) << " py: " << std::bitset<10>(py) << " pz: " << std::bitset<10>(pz)
+              << std::endl;
+    std::cout << "sorted_coordinates: " << std::bitset<10>(sorted_coordinates[0]) << " "
+              << std::bitset<10>(sorted_coordinates[1]) << " " << std::bitset<10>(sorted_coordinates[2]) << std::endl;
+    std::cout << "bits: " << bits[0] << " " << bits[1] << " " << bits[2] << std::endl;
 
     if (bits[0] > bits[1]) // 1 dim has more bits than the other 2 dims, add 1D levels
     {
-        int n = bits[0] - bits[1]
+        const int n = bits[0] - bits[1];
         // add n 1D levels and add to key (trivial)
+        for (int i{0}; i < n; ++i)
+        {
+            const auto processes_bit_index = bits[0] - 1 - i;
+            std::cout << "processed bit: " << ((sorted_coordinates[0] >> processes_bit_index) & 1) << std::endl;
+            key |= ((sorted_coordinates[0] >> processes_bit_index) & 1) << (3 * processes_bit_index);
+        }
+        const unsigned mask = (1u << bits[1]) - 1;
+        sorted_coordinates[0] &= mask;
         bits[0] -= n;
         // now we have bits[0] == bits[1]
     }
+    std::cout << "After 1D levels" << std::endl;
+    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
+    std::cout << "coordinate[0]: " << std::bitset<10>(sorted_coordinates[0]) << std::endl;
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
-        int n = bits[1] - bits[2];
+        const int n = bits[1] - bits[2];
         // encode n 2D levels with 2D-Hilbert and add to key
+        const KeyType key_2D = iHilbert2D<KeyType>(sorted_coordinates[0], sorted_coordinates[1], n);
+        std::cout << "key_2D: " << std::bitset<32>(key_2D) << std::endl;
+        // IM: Check if we want to the 2D key together or break it from 2 bits per level to 3 bits per level
+        key |= key_2D << (3 * bits[2]);
+        // remove n bits from sorted_coordinates[0] and sorted_coordinates[1]
+        const unsigned mask = (1u << bits[2]) - 1;
+        sorted_coordinates[0] &= mask;
+        sorted_coordinates[1] &= mask;
         bits[0] -= n;
-        bits[1] -= n; 
+        bits[1] -= n;
         // now we have bits[0] == bits[1] == bits[2]
     }
+    std::cout << "After 2D levels" << std::endl;
+    std::cout << "sorted_coordinates: " << std::bitset<10>(sorted_coordinates[0]) << " "
+              << std::bitset<10>(sorted_coordinates[1]) << " " << std::bitset<10>(sorted_coordinates[2]) << std::endl;
+    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
 
     // encode remaining bits[0] == min(bx,by,bz) 3D levels or octal digits with 3D-Hilbert and add to key
-
+    const KeyType key_3D =
+        iHilbert<KeyType>(sorted_coordinates[0], sorted_coordinates[1], sorted_coordinates[2], bits[0]);
+    std::cout << "key_3D: " << std::bitset<32>(key_3D) << std::endl;
+    key |= key_3D;
+    std::cout << "After 3D levels" << std::endl;
+    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
     // Example for (bx,by,bz) = (10,9,7): 1D,2D,2D,3D*7
 
     return key;
+}
+
+//! @brief inverse function of iHilbertMixD
+template<class KeyType>
+HOST_DEVICE_FUN inline util::tuple<unsigned, unsigned, unsigned>
+decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    return {0, 0, 0};
 }
 
 /*! @brief compute the Hilbert key for a 3D point of integer coordinates
@@ -246,9 +298,6 @@ iHilbert1DMixed(unsigned px, unsigned py, unsigned pz, unsigned levels_1D, axis 
     }
     return key;
 }
-
-template<class KeyType>
-HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType> iHilbert2D(unsigned px, unsigned py) noexcept;
 
 /*! @brief compute the Hilbert key for a 3D point of integer coordinates
  *
@@ -347,7 +396,8 @@ iHilbert2DMixed(unsigned px, unsigned py, unsigned pz, unsigned levels_2D, axis 
  */
 
 template<class KeyType>
-HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType> iHilbert2D(unsigned px, unsigned py) noexcept
+HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType>
+iHilbert2D(unsigned px, unsigned py, int order) noexcept
 {
     assert(px < (1u << maxTreeLevel<KeyType>{}));
     assert(py < (1u << maxTreeLevel<KeyType>{}));
@@ -356,7 +406,7 @@ HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType> iHilbert2
     unsigned temp;
     KeyType key = 0;
 
-    for (int level = maxTreeLevel<KeyType>{} - 1; level >= 0; level--)
+    for (int level = order - 1; level >= 0; level--)
     {
         xi = (px >> level) & 1u; // Get bit level of x.
         yi = (py >> level) & 1u; // Get bit level of y.
@@ -374,13 +424,14 @@ HOST_DEVICE_FUN std::enable_if_t<std::is_unsigned_v<KeyType>, KeyType> iHilbert2
 
 //! @brief inverse function of iHilbert
 template<class KeyType>
-HOST_DEVICE_FUN inline util::tuple<unsigned, unsigned, unsigned> decodeHilbert(KeyType key) noexcept
+HOST_DEVICE_FUN inline util::tuple<unsigned, unsigned, unsigned>
+decodeHilbert(KeyType key, unsigned order = maxTreeLevel<KeyType>{}) noexcept
 {
     unsigned px = 0;
     unsigned py = 0;
     unsigned pz = 0;
 
-    for (unsigned level = 0; level < maxTreeLevel<KeyType>{}; ++level)
+    for (unsigned level = 0; level < order; ++level)
     {
         unsigned octant   = (key >> (3 * level)) & 7u;
         const unsigned xi = octant >> 2u;

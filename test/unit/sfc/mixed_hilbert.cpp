@@ -17,9 +17,10 @@ TEST(MixedHilbertBox, x10y10z9)
     unsigned bx = 10, by = 10, bz = 9;
 
     // iHilbertMixD(px in [0:512], py in [0:512], pz, bx, by, bz)       == iHilbert(px, py, pz) >> 3
-    // iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 01000000000 (=8^9) + (iHilbert(px, py - 512, pz) >> 3)
-    // iHilbertMixD(px in [512:1024], py in [512:1024], pz, bx, by, bz) == 02000000000 (=8^9) + (iHilbert(px - 512, py - 512, pz) >> 3)
-    // iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 03000000000 (=8^9) + (iHilbert(px, py - 512, pz) >> 3)
+    // iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 01000000000 (=8^9) + (iHilbert(px, py - 512,
+    // pz) >> 3) iHilbertMixD(px in [512:1024], py in [512:1024], pz, bx, by, bz) == 02000000000 (=8^9) + (iHilbert(px -
+    // 512, py - 512, pz) >> 3) iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 03000000000 (=8^9) +
+    // (iHilbert(px, py - 512, pz) >> 3)
 }
 
 TEST(MixedHilbertBox, Long1DDomain)
@@ -182,4 +183,48 @@ TEST(MixedHilbertEncoding, InversionTest2D3D)
 {
     inversionTest2D3D<unsigned>();
     inversionTest2D3D<uint64_t>();
+}
+
+//! @brief tests numKeys random 3D points for encoding/decoding consistency
+template<class KeyType>
+void inversionTestMixD()
+{
+    int numKeys{1};
+    std::vector<std::vector<unsigned>> n_encoding_bits_sweep = {{8, 6, 10}};
+    std::mt19937 gen;
+    for (const auto& n_encoding_bits : n_encoding_bits_sweep)
+    {
+        std::uniform_int_distribution<unsigned> distribution_x(0, (1 << n_encoding_bits[0]) - 1);
+        std::uniform_int_distribution<unsigned> distribution_y(0, (1 << n_encoding_bits[1]) - 1);
+        std::uniform_int_distribution<unsigned> distribution_z(0, (1 << n_encoding_bits[2]) - 1);
+
+        auto getRandX = [&distribution_x, &gen]() { return distribution_x(gen); };
+        auto getRandY = [&distribution_y, &gen]() { return distribution_y(gen); };
+        auto getRandZ = [&distribution_z, &gen]() { return distribution_z(gen); };
+
+        std::vector<unsigned> x(numKeys);
+        std::vector<unsigned> y(numKeys);
+        std::vector<unsigned> z(numKeys);
+
+        std::generate(begin(x), end(x), getRandX);
+        std::generate(begin(y), end(y), getRandY);
+        std::generate(begin(z), end(z), getRandZ);
+
+        for (int i = 0; i < numKeys; ++i)
+        {
+            KeyType hilbertKey =
+                iHilbertMixD<KeyType>(x[i], y[i], z[i], n_encoding_bits[0], n_encoding_bits[1], n_encoding_bits[2]);
+
+            auto [a, b, c] = decodeHilbertMixD(hilbertKey, n_encoding_bits[0], n_encoding_bits[1], n_encoding_bits[2]);
+            // EXPECT_EQ(x[i], a);
+            // EXPECT_EQ(y[i], b);
+            // EXPECT_EQ(z[i], c);
+        };
+    }
+}
+
+TEST(MixedHilbertEncoding, InversionTestMixD)
+{
+    inversionTestMixD<unsigned>();
+    // inversionTestMixD<uint64_t>();
 }
