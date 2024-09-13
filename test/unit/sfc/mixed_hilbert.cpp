@@ -165,3 +165,43 @@ TEST(MixedHilbertEncoding, InversionTest2D3D)
     inversionTest2D3D<unsigned>();
     inversionTest2D3D<uint64_t>();
 }
+
+//! @brief test the curve on the first eight octants
+template<class KeyType>
+void firstOrderCurve1D3D()
+{
+    constexpr unsigned hilbertToMorton[8] = {0, 1, 3, 2, 6, 7, 5, 4};
+
+    for (unsigned xi = 0; xi < 2; ++xi)
+    {
+        for (unsigned yi = 0; yi < 2; ++yi)
+        {
+            for (unsigned zi = 0; zi < 2; ++zi)
+            {
+                unsigned L1RangeLong  = (1 << maxTreeLevel<KeyType>{}) / 2;
+                unsigned L1RangeShort = (1 << (maxTreeLevel<KeyType>{} - 2)) / 2;
+                unsigned mortonOctant = 4 * xi + 2 * yi + zi;
+
+                {
+                    KeyType hilbertKey =
+                        iHilbert1DMixed<KeyType>(L1RangeLong * xi, L1RangeShort * yi, L1RangeShort * zi, 2, axis::x);
+                    unsigned hilbertOctant = octalDigit(hilbertKey, 1);
+                    EXPECT_EQ(mortonOctant, hilbertToMorton[hilbertOctant]);
+                }
+                {
+                    KeyType hilbertKey     = iHilbert1DMixed<KeyType>(L1RangeLong * xi + L1RangeLong - 1,
+                                                                  L1RangeShort * yi + L1RangeShort - 1,
+                                                                  L1RangeShort * zi + L1RangeShort - 1, 2, axis::x);
+                    unsigned hilbertOctant = octalDigit(hilbertKey, 1);
+                    EXPECT_EQ(mortonOctant, hilbertToMorton[hilbertOctant]);
+                }
+            }
+        }
+    }
+}
+
+TEST(MixedHilbertFirstOrderCurve, 1D3D)
+{
+    firstOrderCurve1D3D<unsigned>();
+    firstOrderCurve1D3D<uint64_t>();
+}
