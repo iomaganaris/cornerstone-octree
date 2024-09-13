@@ -148,12 +148,6 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
                                                coordinates[permutation[2]]};
     std::sort(bits.begin(), bits.end(), std::greater<unsigned>{});
 
-    std::cout << "px: " << std::bitset<10>(px) << " py: " << std::bitset<10>(py) << " pz: " << std::bitset<10>(pz)
-              << std::endl;
-    std::cout << "sorted_coordinates: " << std::bitset<10>(sorted_coordinates[0]) << " "
-              << std::bitset<10>(sorted_coordinates[1]) << " " << std::bitset<10>(sorted_coordinates[2]) << std::endl;
-    std::cout << "bits: " << bits[0] << " " << bits[1] << " " << bits[2] << std::endl;
-
     if (bits[0] > bits[1]) // 1 dim has more bits than the other 2 dims, add 1D levels
     {
         const int n = bits[0] - bits[1];
@@ -161,7 +155,6 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         for (int i{0}; i < n; ++i)
         {
             const auto processes_bit_index = bits[0] - 1 - i;
-            std::cout << "processed bit: " << ((sorted_coordinates[0] >> processes_bit_index) & 1) << std::endl;
             key |= ((sorted_coordinates[0] >> processes_bit_index) & 1) << (3 * processes_bit_index);
         }
         const unsigned mask = (1u << bits[1]) - 1;
@@ -169,18 +162,13 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         bits[0] -= n;
         // now we have bits[0] == bits[1]
     }
-    std::cout << "After 1D levels" << std::endl;
-    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
-    std::cout << "coordinate[0]: " << std::bitset<10>(sorted_coordinates[0]) << std::endl;
-    std::cout << "coordinate[1]: " << std::bitset<10>(sorted_coordinates[1]) << std::endl;
-    std::cout << "coordinate[2]: " << std::bitset<10>(sorted_coordinates[2]) << std::endl;
+
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
         const int n = bits[1] - bits[2];
         // encode n 2D levels with 2D-Hilbert and add to key
         const KeyType key_2D =
             iHilbert2D<KeyType>(sorted_coordinates[0] >> bits[2], sorted_coordinates[1] >> bits[2], n);
-        std::cout << "key_2D: " << std::bitset<32>(key_2D) << std::endl;
         // IM: Check if we want to the 2D key together or break it from 2 bits per level to 3 bits per level
         key |= key_2D << (3 * bits[2]);
         // remove n bits from sorted_coordinates[0] and sorted_coordinates[1]
@@ -191,18 +179,11 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         bits[1] -= n;
         // now we have bits[0] == bits[1] == bits[2]
     }
-    std::cout << "After 2D levels" << std::endl;
-    std::cout << "sorted_coordinates: " << std::bitset<10>(sorted_coordinates[0]) << " "
-              << std::bitset<10>(sorted_coordinates[1]) << " " << std::bitset<10>(sorted_coordinates[2]) << std::endl;
-    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
 
     // encode remaining bits[0] == min(bx,by,bz) 3D levels or octal digits with 3D-Hilbert and add to key
     const KeyType key_3D =
         iHilbert<KeyType>(sorted_coordinates[0], sorted_coordinates[1], sorted_coordinates[2], bits[0]);
-    std::cout << "key_3D: " << std::bitset<32>(key_3D) << std::endl;
     key |= key_3D;
-    std::cout << "After 3D levels" << std::endl;
-    std::cout << "key:    " << std::bitset<32>(key) << std::endl;
     // Example for (bx,by,bz) = (10,9,7): 1D,2D,2D,3D*7
 
     return key;
@@ -640,14 +621,11 @@ template<class KeyType>
 HOST_DEVICE_FUN inline util::tuple<unsigned, unsigned, unsigned>
 decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    std::cout << "Decode key: " << std::bitset<32>(key) << std::endl;
-
     std::array<unsigned, 3> bits{bx, by, bz};
     std::array<int, 3> permutation{0, 1, 2};
     std::sort(permutation.begin(), permutation.end(), [&bits](int i, int j) { return bits[i] > bits[j]; });
     std::sort(bits.begin(), bits.end(), std::greater<unsigned>{});
 
-    std::cout << "bits: " << bits[0] << " " << bits[1] << " " << bits[2] << std::endl;
     std::array<unsigned, 3> coordinates{0, 0, 0};
 
     if (bits[0] > bits[1]) // 1 dim has more bits than the other 2 dims, add 1D levels
@@ -660,38 +638,20 @@ decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
         }
         key &= (1u << (3 * bits[1])) - 1;
     }
-    std::cout << "After 1D levels" << std::endl;
-    std::cout << "coordinate[0]: " << std::bitset<10>(coordinates[0]) << std::endl;
-    std::cout << "key:        " << std::bitset<32>(key) << std::endl;
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
-        const auto key_2D = key >> (3 * bits[2]);
-        std::cout << "key_2D: " << std::bitset<32>(key_2D) << std::endl;
+        const auto key_2D  = key >> (3 * bits[2]);
         const auto n       = bits[1] - bits[2];
         const auto pair_2D = decodeHilbert2D<KeyType>(key_2D, bits[1] - bits[2]);
-        std::cout << "pair_2D: " << std::bitset<10>(get<0>(pair_2D)) << " " << std::bitset<10>(get<1>(pair_2D))
-                  << std::endl;
         coordinates[0] |= (get<0>(pair_2D) & ((1u << n) - 1)) << bits[2];
         coordinates[1] |= (get<1>(pair_2D) & ((1u << n) - 1)) << bits[2];
-        // coordinates[0] <<= bits[2];
-        // coordinates[1] <<= bits[2];
         key &= (1u << (3 * bits[2])) - 1;
     }
-    std::cout << "After 2D levels" << std::endl;
-    std::cout << "coordinate[0]: " << std::bitset<10>(coordinates[0]) << std::endl;
-    std::cout << "coordinate[1]: " << std::bitset<10>(coordinates[1]) << std::endl;
 
     const auto pair_3D = decodeHilbert<KeyType>(key, bits[2]);
-    std::cout << "pair_3D: " << std::bitset<10>(get<0>(pair_3D)) << " " << std::bitset<10>(get<1>(pair_3D)) << " "
-              << std::bitset<10>(get<2>(pair_3D)) << std::endl;
     coordinates[0] |= get<0>(pair_3D);
     coordinates[1] |= get<1>(pair_3D);
     coordinates[2] |= get<2>(pair_3D);
-
-    std::cout << "After 3D levels" << std::endl;
-    std::cout << "coordinate[0]: " << std::bitset<10>(coordinates[0]) << std::endl;
-    std::cout << "coordinate[1]: " << std::bitset<10>(coordinates[1]) << std::endl;
-    std::cout << "coordinate[2]: " << std::bitset<10>(coordinates[2]) << std::endl;
 
     std::array<unsigned, 3> return_coordinates{0, 0, 0};
     return_coordinates[permutation[0]] = coordinates[0];

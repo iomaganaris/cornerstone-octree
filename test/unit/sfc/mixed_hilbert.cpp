@@ -226,5 +226,5 @@ void inversionTestMixD()
 TEST(MixedHilbertEncoding, InversionTestMixD)
 {
     inversionTestMixD<unsigned>();
-    // inversionTestMixD<uint64_t>();
+    inversionTestMixD<uint64_t>();
 }
