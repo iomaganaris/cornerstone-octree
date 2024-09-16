@@ -154,7 +154,7 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         // add n 1D levels and add to key (trivial)
         for (int i{0}; i < n; ++i)
         {
-            const auto processes_bit_index = bits[0] - 1 - i;
+            const auto processes_bit_index = bits[0] - i - 1;
             key |= ((sorted_coordinates[0] >> processes_bit_index) & 1) << (3 * processes_bit_index);
         }
         const unsigned mask = (1u << bits[1]) - 1;
@@ -170,7 +170,14 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         const KeyType key_2D =
             iHilbert2D<KeyType>(sorted_coordinates[0] >> bits[2], sorted_coordinates[1] >> bits[2], n);
         // IM: Check if we want to the 2D key together or break it from 2 bits per level to 3 bits per level
-        key |= key_2D << (3 * bits[2]);
+        // key |= key_2D << (3 * bits[2]);
+        // or below
+        for (int i{0}; i < n; ++i)
+        {
+            const auto processes_2D_key_bit_index     = n - 1 - i;
+            const auto processes_coordinate_bit_index = bits[1] - 1 - i;
+            key |= ((key_2D >> (2 * processes_2D_key_bit_index)) & 3) << (3 * processes_coordinate_bit_index);
+        }
         // remove n bits from sorted_coordinates[0] and sorted_coordinates[1]
         const unsigned mask = (1u << bits[2]) - 1;
         sorted_coordinates[0] &= mask;
@@ -637,15 +644,22 @@ decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
         const int n = bits[0] - bits[1];
         for (int i{0}; i < n; ++i)
         {
-            const auto processes_bit_index = bits[0] - 1 - i;
-            coordinates[0] |= ((key >> (3 * processes_bit_index)) & 1) << processes_bit_index;
+            const auto processes_coordinate_bit_index = bits[0] - 1 - i;
+            coordinates[0] |= ((key >> (3 * processes_coordinate_bit_index)) & 1) << processes_coordinate_bit_index;
         }
         key &= (1u << (3 * bits[1])) - 1;
     }
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
-        const auto key_2D  = key >> (3 * bits[2]);
-        const auto n       = bits[1] - bits[2];
+        const int n = bits[1] - bits[2];
+        // const auto key_2D  = key >> (3 * bits[2]);
+        KeyType key_2D{};
+        for (int i{}; i < n; ++i)
+        {
+            const auto processes_2D_key_bit_index     = n - 1 - i;
+            const auto processes_coordinate_bit_index = bits[1] - 1 - i;
+            key_2D |= ((key >> (3 * processes_coordinate_bit_index)) & 3) << (2 * processes_2D_key_bit_index);
+        }
         const auto pair_2D = decodeHilbert2D<KeyType>(key_2D, bits[1] - bits[2]);
         coordinates[0] |= (get<0>(pair_2D) & ((1u << n) - 1)) << bits[2];
         coordinates[1] |= (get<1>(pair_2D) & ((1u << n) - 1)) << bits[2];
