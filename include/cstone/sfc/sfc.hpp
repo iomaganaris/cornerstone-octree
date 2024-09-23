@@ -50,13 +50,9 @@ using MortonKey = StrongType<IntegerType, struct MortonKeyTag>;
 template<class IntegerType>
 using HilbertKey = StrongType<IntegerType, struct HilbertKeyTag>;
 
-//! @brief Strong type for Hilbert 1D Mixed keys
+//! @brief Strong type for Hilbert Mixed Dimension keys
 template<class IntegerType>
-using Hilbert1DMixedKey = StrongType<IntegerType, struct Hilbert1DMixedKeyTag>;
-
-//! @brief Strong type for Hilbert 2D Mixed keys
-template<class IntegerType>
-using Hilbert2DMixedKey = StrongType<IntegerType, struct Hilbert2DMixedKeyTag>;
+using HilbertMixDKey = StrongType<IntegerType, struct HilbertMixDKeyTag>;
 
 //! @brief use this definition to select the kind of space filling curve to use
 template<class IntegerType>
@@ -83,49 +79,26 @@ HOST_DEVICE_FUN const SfcKind<KeyType>* sfcKindPointer(const KeyType* ptr)
 }
 
 template<class IntegerType>
-using Sfc1DMixedKind = Hilbert1DMixedKey<IntegerType>;
+using SfcMixDKind = HilbertMixDKey<IntegerType>;
 
 template<class KeyType>
-HOST_DEVICE_FUN Sfc1DMixedKind<KeyType> sfc1DMixedKey(KeyType key)
+HOST_DEVICE_FUN SfcMixDKind<KeyType> sfcMixDKey(KeyType key)
 {
-    return Sfc1DMixedKind<KeyType>(key);
+    return SfcMixDKind<KeyType>(key);
 }
 
 //! @brief convert an integer pointer to the corresponding strongly typed SFC key pointer
 template<class KeyType>
-HOST_DEVICE_FUN Sfc1DMixedKind<KeyType>* Sfc1DMixedKindPointer(KeyType* ptr)
+HOST_DEVICE_FUN SfcMixDKind<KeyType>* SfcMixDKindPointer(KeyType* ptr)
 {
-    return reinterpret_cast<Sfc1DMixedKind<KeyType>*>(ptr);
+    return reinterpret_cast<SfcMixDKind<KeyType>*>(ptr);
 }
 
 //! @brief convert a integer pointer to the corresponding strongly typed SFC key pointer
 template<class KeyType>
-HOST_DEVICE_FUN const Sfc1DMixedKind<KeyType>* Sfc1DMixedKindPointer(const KeyType* ptr)
+HOST_DEVICE_FUN const SfcMixDKind<KeyType>* SfcMixDKindPointer(const KeyType* ptr)
 {
-    return reinterpret_cast<const Sfc1DMixedKind<KeyType>*>(ptr);
-}
-
-template<class IntegerType>
-using Sfc2DMixedKind = Hilbert2DMixedKey<IntegerType>;
-
-template<class KeyType>
-HOST_DEVICE_FUN Sfc2DMixedKind<KeyType> sfc2DMixedKey(KeyType key)
-{
-    return Sfc2DMixedKind<KeyType>(key);
-}
-
-//! @brief convert an integer pointer to the corresponding strongly typed SFC key pointer
-template<class KeyType>
-HOST_DEVICE_FUN Sfc2DMixedKind<KeyType>* Sfc2DMixedKindPointer(KeyType* ptr)
-{
-    return reinterpret_cast<Sfc2DMixedKind<KeyType>*>(ptr);
-}
-
-//! @brief convert a integer pointer to the corresponding strongly typed SFC key pointer
-template<class KeyType>
-HOST_DEVICE_FUN const Sfc2DMixedKind<KeyType>* Sfc2DMixedKindPointer(const KeyType* ptr)
-{
-    return reinterpret_cast<const Sfc2DMixedKind<KeyType>*>(ptr);
+    return reinterpret_cast<const SfcMixDKind<KeyType>*>(ptr);
 }
 
 template<>
@@ -196,13 +169,7 @@ struct IsHilbert : std::bool_constant<std::is_same_v<KeyType, HilbertKey<typenam
 
 //! @brief Meta function to detect Mixed 1D Hilbert key types
 template<class KeyType>
-struct IsHilbert1DMixed : std::bool_constant<std::is_same_v<KeyType, Hilbert1DMixedKey<typename KeyType::ValueType>>>
-{
-};
-
-//! @brief Meta function to detect Mixed 2D Hilbert key types
-template<class KeyType>
-struct IsHilbert2DMixed : std::bool_constant<std::is_same_v<KeyType, Hilbert2DMixedKey<typename KeyType::ValueType>>>
+struct IsHilbertMixD : std::bool_constant<std::is_same_v<KeyType, HilbertMixDKey<typename KeyType::ValueType>>>
 {
 };
 
@@ -222,18 +189,10 @@ HOST_DEVICE_FUN inline std::enable_if_t<IsHilbert<KeyType>{}, KeyType> iSfcKey(u
 
 //! @brief Key encode overload for Mixed Hilbert keys
 template<class KeyType>
-HOST_DEVICE_FUN inline std::enable_if_t<IsHilbert1DMixed<KeyType>{}, KeyType>
-iSfc1DMixedKey(unsigned ix, unsigned iy, unsigned iz, int level, axis long_dimension)
+HOST_DEVICE_FUN inline std::enable_if_t<IsHilbertMixD<KeyType>{}, KeyType>
+iSfcMixDKey(unsigned ix, unsigned iy, unsigned iz, unsigned bx, unsigned by, unsigned bz)
 {
-    return KeyType{iHilbert1DMixed<typename KeyType::ValueType>(ix, iy, iz, level, long_dimension)};
-}
-
-//! @brief Key encode overload for Mixed Hilbert keys
-template<class KeyType>
-HOST_DEVICE_FUN inline std::enable_if_t<IsHilbert2DMixed<KeyType>{}, KeyType>
-iSfc2DMixedKey(unsigned ix, unsigned iy, unsigned iz, int level, axis short_dimension)
-{
-    return KeyType{iHilbert2DMixed<typename KeyType::ValueType>(ix, iy, iz, level, short_dimension)};
+    return KeyType{iHilbertMixD<typename KeyType::ValueType>(ix, iy, iz, bx, by, bz)};
 }
 
 template<class KeyType, class T>
@@ -258,58 +217,25 @@ HOST_DEVICE_FUN inline KeyType sfc3D(T x, T y, T z, T xmin, T ymin, T zmin, T mx
 
 template<class KeyType, class T>
 HOST_DEVICE_FUN inline KeyType
-sfc1D3D(T x, T y, T z, T xmin, T ymin, T zmin, T mx, T my, T mz, int levels_1D, axis long_dimension)
+sfcMixD(T x, T y, T z, T xmin, T ymin, T zmin, T mx, T my, T mz, unsigned bx, unsigned by, unsigned bz)
 {
-    constexpr int mcoord_long = (1u << maxTreeLevel<typename KeyType::ValueType>{}) - 1;
-    int mcoord_short          = (1u << (maxTreeLevel<typename KeyType::ValueType>{} - levels_1D)) - 1;
+    const int mcoord_x = (1u << bx) - 1;
+    const int mcoord_y = (1u << by) - 1;
+    const int mcoord_z = (1u << bz) - 1;
 
     int ix = std::floor(x * mx) - xmin * mx;
     int iy = std::floor(y * my) - ymin * my;
     int iz = std::floor(z * mz) - zmin * mz;
 
-    const auto max_coordinate = [&](axis dimension)
-    {
-        if (dimension == long_dimension) return mcoord_long;
-        return mcoord_short;
-    };
-
-    ix = stl::min(ix, max_coordinate(axis::x));
-    iy = stl::min(iy, max_coordinate(axis::y));
-    iz = stl::min(iz, max_coordinate(axis::z));
+    ix = stl::min(ix, mcoord_x);
+    iy = stl::min(iy, mcoord_y);
+    iz = stl::min(iz, mcoord_z);
 
     assert(ix >= 0);
     assert(iy >= 0);
     assert(iz >= 0);
 
-    return iSfc1DMixedKey<KeyType>(ix, iy, iz, levels_1D, long_dimension);
-}
-
-template<class KeyType, class T>
-HOST_DEVICE_FUN inline KeyType
-sfc2D3D(T x, T y, T z, T xmin, T ymin, T zmin, T mx, T my, T mz, int levels_2D, axis short_dimension)
-{
-    constexpr int mcoord_long = (1u << maxTreeLevel<typename KeyType::ValueType>{}) - 1;
-    int mcoord_short          = (1u << (maxTreeLevel<typename KeyType::ValueType>{} - levels_2D)) - 1;
-
-    int ix = std::floor(x * mx) - xmin * mx;
-    int iy = std::floor(y * my) - ymin * my;
-    int iz = std::floor(z * mz) - zmin * mz;
-
-    const auto max_coordinate = [&](axis dimension)
-    {
-        if (dimension == short_dimension) return mcoord_short;
-        return mcoord_long;
-    };
-
-    ix = stl::min(ix, max_coordinate(axis::x));
-    iy = stl::min(iy, max_coordinate(axis::y));
-    iz = stl::min(iz, max_coordinate(axis::z));
-
-    assert(ix >= 0);
-    assert(iy >= 0);
-    assert(iz >= 0);
-
-    return iSfc2DMixedKey<KeyType>(ix, iy, iz, levels_2D, short_dimension);
+    return iSfcMixDKey<KeyType>(ix, iy, iz);
 }
 
 /*! @brief Calculates a Hilbert key for a 3D point within the specified box
@@ -342,27 +268,17 @@ HOST_DEVICE_FUN inline KeyType sfc3D(T x, T y, T z, const Box<T>& box)
  *       -not specifying an unsigned type results in a compilation error
  */
 template<class KeyType, class T>
-HOST_DEVICE_FUN inline KeyType sfc1D3D(T x, T y, T z, const Box<T>& box, int levels_1D)
+HOST_DEVICE_FUN inline KeyType sfcMixD(T x, T y, T z, const Box<T>& box)
 {
     constexpr unsigned cubeLength = (1u << maxTreeLevel<typename KeyType::ValueType>{});
 
-    /// TODO: based on the box dimensions select the long_dimension
-    const axis long_dimension = axis::x;
+    const auto max_dim = std::max({box.lx, box.ly, box.lz});
+    const unsigned bx  = maxTreeLevel<typename KeyType::ValueType>{} - (box.lx / max_dim / 2);
+    const unsigned by  = maxTreeLevel<typename KeyType::ValueType>{} - (box.ly / max_dim / 2);
+    const unsigned bz  = maxTreeLevel<typename KeyType::ValueType>{} - (box.lz / max_dim / 2);
 
-    return sfc1D3D<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength * box.ilx(), cubeLength * box.ily(),
-                            cubeLength * box.ilz(), levels_1D, long_dimension);
-}
-
-template<class KeyType, class T>
-HOST_DEVICE_FUN inline KeyType sfc2D3D(T x, T y, T z, const Box<T>& box, int levels_2D)
-{
-    constexpr unsigned cubeLength = (1u << maxTreeLevel<typename KeyType::ValueType>{});
-
-    /// TODO: based on the box dimensions select the short_dimension
-    const axis short_dimension = axis::x;
-
-    return sfc2D3D<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength * box.ilx(), cubeLength * box.ily(),
-                            cubeLength * box.ilz(), levels_2D, short_dimension);
+    return sfcMixD<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength * box.ilx(), cubeLength * box.ily(),
+                            cubeLength * box.ilz(), bx, by, bz);
 }
 
 //! @brief decode a Morton key
@@ -474,35 +390,12 @@ void computeSfcKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, s
  * @param[in]  box        coordinate bounding box
  */
 template<class T, class KeyType>
-void computeSfc1D3DKeys(
-    const T* x, const T* y, const T* z, KeyType* particleKeys, size_t n, const Box<T>& box, unsigned levels_1D)
+void computeSfcMixDKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, size_t n, const Box<T>& box)
 {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i)
     {
-        particleKeys[i] = sfc1D3D<KeyType>(x[i], y[i], z[i], box, levels_1D);
-    }
-}
-
-/*! @brief compute the mixed bit SFC keys for the input coordinate arrays
- *
- * @tparam     T          float or double
- * @tparam     KeyType    HilbertKey or MortonKey
- * @param[in]  x          coordinate input arrays
- * @param[in]  y
- * @param[in]  z
- * @param[out] codeBegin  output for SFC keys
- * @param[in]  n          number of particles, size of input and output arrays
- * @param[in]  box        coordinate bounding box
- */
-template<class T, class KeyType>
-void computeSfc2D3DKeys(
-    const T* x, const T* y, const T* z, KeyType* particleKeys, size_t n, const Box<T>& box, unsigned levels_2D)
-{
-#pragma omp parallel for schedule(static)
-    for (std::size_t i = 0; i < n; ++i)
-    {
-        particleKeys[i] = sfc2D3D<KeyType>(x[i], y[i], z[i], box, levels_2D);
+        particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box);
     }
 }
 
