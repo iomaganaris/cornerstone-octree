@@ -4,19 +4,6 @@
 
 using namespace cstone;
 
-// TEST(MixedHilbert, hilbert3D)
-// {
-//     unsigned x = 46; // 0000101110
-//     unsigned y = 28; // 0000011100
-//     unsigned z = 54; // 0000110110
-//     auto hilbertKey = iHilbert<unsigned>(x, y, z);
-//     std::cout << "hilbertKey = " << std::bitset<32>(hilbertKey) << std::endl; // 00000000000000110010000001010010
-//     auto [a, b, c] = decodeHilbert<unsigned>(hilbertKey);
-//     EXPECT_EQ(x, a);
-//     EXPECT_EQ(y, b);
-//     EXPECT_EQ(z, c);
-// }
-
 TEST(MixedHilbertBox, x10y9z9)
 {
     unsigned bx = 10, by = 9, bz = 9;
@@ -45,14 +32,8 @@ TEST(MixedHilbertBox, x10y9z9)
 
     for (int i = 0; i < numKeys; ++i)
     {
-        std::cout << "x: " << std::bitset<10>(x_le_511[i]) << " (" << x_le_511[i] << ")" << std::endl;
-        std::cout << "y: " << std::bitset<10>(y[i]) << " (" << y[i] << ")" << std::endl;
-        std::cout << "z: " << std::bitset<10>(z[i]) << " (" << z[i] << ")" << std::endl;
         auto hilbertMixDKey = iHilbertMixD<unsigned>(x_le_511[i], y[i], z[i], bx, by, bz);
-        std::cout << "hilbertMixDKey = " << std::bitset<32>(hilbertMixDKey) << std::endl;
-        auto hilbertKey = iHilbert<unsigned>(x_le_511[i], y[i], z[i]);
-        std::cout << "hilbertKey =     " << std::bitset<32>(hilbertKey) << std::endl;
-
+        auto hilbertKey     = iHilbert<unsigned>(x_le_511[i], y[i], z[i]);
         EXPECT_EQ(hilbertMixDKey, hilbertKey);
     };
 
@@ -61,19 +42,10 @@ TEST(MixedHilbertBox, x10y9z9)
         std::cout << "x: " << std::bitset<10>(x_ge_512[i]) << " (" << x_ge_512[i] << ")" << std::endl;
         std::cout << "y: " << std::bitset<10>(y[i]) << " (" << y[i] << ")" << std::endl;
         std::cout << "z: " << std::bitset<10>(z[i]) << " (" << z[i] << ")" << std::endl;
-        auto hilbertMixDKey = iHilbertMixD<unsigned>(x_ge_512[i], y[i], z[i], bx, by, bz);
-        std::cout << "hilbertMixDKey = " << std::bitset<32>(hilbertMixDKey) << std::endl;
+        auto hilbertMixDKey      = iHilbertMixD<unsigned>(x_ge_512[i], y[i], z[i], bx, by, bz);
         auto hilbertKey_px_m_512 = iHilbert<unsigned>(x_ge_512[i] - 512, y[i], z[i]);
-        std::cout << "hilbertKey_px_m_512 =     " << std::bitset<32>(hilbertKey_px_m_512) << std::endl;
-
         EXPECT_EQ(hilbertMixDKey, (1 << 27) + hilbertKey_px_m_512);
     };
-
-    // clang-format off
-    // iHilbertMixD(px in [0:512], py, pz, bx, by, bz)    == iHilbert(px, py, pz) >> 3
-    // iHilbertMixD(px in [512:1024], py, pz, bx, by, bz) == 01000000000 (=8^9) + (iHilbert3d(px - 512, py, pz) >> 3)
-    // IM: I believe that iHilbert >> 3 above is incorrect because the LSBs of the 3D Hilbert key are !=0
-    // clang-format on
 }
 
 TEST(MixedHilbertBox, x10y10z9)
