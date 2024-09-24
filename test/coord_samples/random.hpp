@@ -114,7 +114,11 @@ public:
 
         auto keyData = (KeyType*)(codes_.data());
 
-        computeSfcKeys(x_.data(), y_.data(), z_.data(), keyData, n, box);
+        if constexpr (std::is_same_v<KeyType, SfcMixDKind<Integer>>)
+        {
+            computeSfcMixDKeys(x_.data(), y_.data(), z_.data(), keyData, n, box);
+        }
+        else { computeSfcKeys(x_.data(), y_.data(), z_.data(), keyData, n, box); }
 
         std::vector<LocalIndex> sfcOrder(n);
         std::iota(begin(sfcOrder), end(sfcOrder), LocalIndex(0));
@@ -175,7 +179,11 @@ public:
         std::generate(begin(z_), end(z_), randZ);
 
         auto keyData = (KeyType*)(codes_.data());
-        computeSfcKeys(x_.data(), y_.data(), z_.data(), keyData, n, box);
+        if constexpr (std::is_same_v<KeyType, SfcMixDKind<Integer>>)
+        {
+            computeSfcMixDKeys(x_.data(), y_.data(), z_.data(), keyData, n, box);
+        }
+        else { computeSfcKeys(x_.data(), y_.data(), z_.data(), keyData, n, box); }
 
         std::vector<LocalIndex> sfcOrder(n);
         std::iota(begin(sfcOrder), end(sfcOrder), LocalIndex(0));

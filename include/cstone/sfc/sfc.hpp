@@ -231,11 +231,13 @@ sfcMixD(T x, T y, T z, T xmin, T ymin, T zmin, T mx, T my, T mz, unsigned bx, un
     iy = stl::min(iy, mcoord_y);
     iz = stl::min(iz, mcoord_z);
 
+    std::cout << "ix: " << ix << ", iy: " << iy << ", iz: " << iz << std::endl;
+
     assert(ix >= 0);
     assert(iy >= 0);
     assert(iz >= 0);
 
-    return iSfcMixDKey<KeyType>(ix, iy, iz);
+    return iSfcMixDKey<KeyType>(ix, iy, iz, bx, by, bz);
 }
 
 /*! @brief Calculates a Hilbert key for a 3D point within the specified box
@@ -257,7 +259,7 @@ HOST_DEVICE_FUN inline KeyType sfc3D(T x, T y, T z, const Box<T>& box)
                           cubeLength * box.ilz());
 }
 
-/*! @brief Calculates a Mixed Hilbert key for a 3D point within the specified box
+/*! @brief Calculates a MixD Hilbert key for a 3D point within the specified box
  *
  * @tparam    KeyType  32- or 64-bit Morton or Hilbert key type.
  * @param[in] x,y,z    input coordinates within the unit cube [0,1]^3
@@ -270,15 +272,24 @@ HOST_DEVICE_FUN inline KeyType sfc3D(T x, T y, T z, const Box<T>& box)
 template<class KeyType, class T>
 HOST_DEVICE_FUN inline KeyType sfcMixD(T x, T y, T z, const Box<T>& box)
 {
-    constexpr unsigned cubeLength = (1u << maxTreeLevel<typename KeyType::ValueType>{});
+    // Scale bx, by, bz and cubeLength_x, cubeLength_y, cubeLength_z based on the box size
+    const auto max_extent = box.maxExtent();
+    const unsigned bx =
+        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.lx()));
+    const unsigned by =
+        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.ly()));
+    const unsigned bz =
+        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.lz()));
+    const unsigned cubeLength_x = (1u << bx);
+    const unsigned cubeLength_y = (1u << by);
+    const unsigned cubeLength_z = (1u << bz);
+    std::cout << "==========================\n";
+    std::cout << std::format("bx: {}, by: {}, bz: {}\n", bx, by, bz);
+    std::cout << std::format("box.lx: {}, box.ly: {}, box.lz: {}\n", box.lx(), box.ly(), box.lz());
+    std::cout << std::format("x: {}, y: {}, z: {}\n", x, y, z);
 
-    const auto max_dim = std::max({box.lx, box.ly, box.lz});
-    const unsigned bx  = maxTreeLevel<typename KeyType::ValueType>{} - (box.lx / max_dim / 2);
-    const unsigned by  = maxTreeLevel<typename KeyType::ValueType>{} - (box.ly / max_dim / 2);
-    const unsigned bz  = maxTreeLevel<typename KeyType::ValueType>{} - (box.lz / max_dim / 2);
-
-    return sfcMixD<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength * box.ilx(), cubeLength * box.ily(),
-                            cubeLength * box.ilz(), bx, by, bz);
+    return sfcMixD<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength_x * box.ilx(),
+                            cubeLength_y * box.ily(), cubeLength_z * box.ilz(), bx, by, bz);
 }
 
 //! @brief decode a Morton key

@@ -156,6 +156,7 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
         {
             const auto processes_bit_index = bits[0] - i - 1;
             key |= ((sorted_coordinates[0] >> processes_bit_index) & 1) << (3 * processes_bit_index);
+            // IM: Should it be 00? for x, 0?0 for y and ?00 for z?
         }
         const unsigned mask = (1u << bits[1]) - 1;
         sorted_coordinates[0] &= mask;

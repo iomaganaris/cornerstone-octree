@@ -111,7 +111,7 @@ TEST(MixedHilbertBox, x10y10z9)
     // iHilbertMixD(px in [0:512], py in [0:512], pz, bx, by, bz)       == iHilbert(px, py, pz) >> 3
     // iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 01000000000 (=8^9) + (iHilbert(px, py - 512, pz) >> 3)
     // iHilbertMixD(px in [512:1024], py in [512:1024], pz, bx, by, bz) == 02000000000 (=8^9) + (iHilbert(px - 512, py - 512, pz) >> 3)
-    // IM: Can't understand below
+    // IM: Can't understand below since inputs to the functions are the same as the 2nd case
     // iHilbertMixD(px in [0:512], py in [512:1024], pz, bx, by, bz)    == 03000000000 (=8^9) + (iHilbert(px, py - 512, pz) >> 3)
     // clang-format on
 }
