@@ -231,8 +231,6 @@ sfcMixD(T x, T y, T z, T xmin, T ymin, T zmin, T mx, T my, T mz, unsigned bx, un
     iy = stl::min(iy, mcoord_y);
     iz = stl::min(iz, mcoord_z);
 
-    std::cout << "ix: " << ix << ", iy: " << iy << ", iz: " << iz << std::endl;
-
     assert(ix >= 0);
     assert(iy >= 0);
     assert(iz >= 0);
@@ -270,26 +268,19 @@ HOST_DEVICE_FUN inline KeyType sfc3D(T x, T y, T z, const Box<T>& box)
  *       -not specifying an unsigned type results in a compilation error
  */
 template<class KeyType, class T>
-HOST_DEVICE_FUN inline KeyType sfcMixD(T x, T y, T z, const Box<T>& box)
+HOST_DEVICE_FUN inline KeyType sfcMixD(T x, T y, T z, const Box<T>& box, unsigned bx, unsigned by, unsigned bz)
 {
-    // Scale bx, by, bz and cubeLength_x, cubeLength_y, cubeLength_z based on the box size
-    const auto max_extent       = box.maxExtent();
-    const unsigned bx           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
-                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.lx()))),
-                                           1u);
-    const unsigned by           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
-                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.ly()))),
-                                           1u);
-    const unsigned bz           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
-                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.lz()))),
-                                           1u);
+    // Scale cubeLength_x, cubeLength_y, cubeLength_z based on bx, by, bz
+    // IM: bx, by and bz could be scaled based on the extents of the x, y, z dimensions
+    //     however, this would probably make sense only if the box is not cubical and
+    //     the points are uniformly distributed within the box.
+    //     For now keep the bx, by and bz as arguments.
+    assert(bx <= maxTreeLevel<typename KeyType::ValueType>{});
+    assert(by <= maxTreeLevel<typename KeyType::ValueType>{});
+    assert(bz <= maxTreeLevel<typename KeyType::ValueType>{});
     const unsigned cubeLength_x = (1u << bx);
     const unsigned cubeLength_y = (1u << by);
     const unsigned cubeLength_z = (1u << bz);
-    std::cout << "==========================\n";
-    std::cout << std::format("bx: {}, by: {}, bz: {}\n", bx, by, bz);
-    std::cout << std::format("box.lx: {}, box.ly: {}, box.lz: {}\n", box.lx(), box.ly(), box.lz());
-    std::cout << std::format("x: {}, y: {}, z: {}\n", x, y, z);
 
     return sfcMixD<KeyType>(x, y, z, box.xmin(), box.ymin(), box.zmin(), cubeLength_x * box.ilx(),
                             cubeLength_y * box.ily(), cubeLength_z * box.ilz(), bx, by, bz);
@@ -404,12 +395,20 @@ void computeSfcKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, s
  * @param[in]  box        coordinate bounding box
  */
 template<class T, class KeyType>
-void computeSfcMixDKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, size_t n, const Box<T>& box)
+void computeSfcMixDKeys(const T* x,
+                        const T* y,
+                        const T* z,
+                        KeyType* particleKeys,
+                        size_t n,
+                        const Box<T>& box,
+                        unsigned bx,
+                        unsigned by,
+                        unsigned bz)
 {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i)
     {
-        particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box);
+        particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box, bx, by, bz);
     }
 }
 

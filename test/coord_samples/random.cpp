@@ -55,15 +55,16 @@ TEST(CoordinateSamples, randomMixDContainerIsSorted)
     using real        = double;
     using IntegerType = unsigned;
     int n             = 100;
+    unsigned bx{8};
+    unsigned by{10};
+    unsigned bz{4};
 
-    Box<real> box{-240, 480, 0, 5, 0, 1};
-    RandomCoordinates<real, SfcMixDKind<IntegerType>> c(n, box);
+    Box<real> box{-240, 480, 0, 512, 0, 1};
+    RandomCoordinates<real, SfcMixDKind<IntegerType>> c(n, box, 42, bx, by, bz);
 
     std::vector<IntegerType> testCodes(n);
-    computeSfcMixDKeys(c.x().data(), c.y().data(), c.z().data(), SfcMixDKindPointer(testCodes.data()), n, box);
-    for (const auto& code : testCodes)
-    {
-        std::cout << "key: " << code << std::endl;
-    }
+    computeSfcMixDKeys(c.x().data(), c.y().data(), c.z().data(), SfcMixDKindPointer(testCodes.data()), n, box, bx, by,
+                       bz);
+
     EXPECT_TRUE(std::is_sorted(testCodes.begin(), testCodes.end()));
 }
