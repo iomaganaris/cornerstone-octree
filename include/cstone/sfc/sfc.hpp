@@ -273,13 +273,16 @@ template<class KeyType, class T>
 HOST_DEVICE_FUN inline KeyType sfcMixD(T x, T y, T z, const Box<T>& box)
 {
     // Scale bx, by, bz and cubeLength_x, cubeLength_y, cubeLength_z based on the box size
-    const auto max_extent = box.maxExtent();
-    const unsigned bx =
-        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.lx()));
-    const unsigned by =
-        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.ly()));
-    const unsigned bz =
-        maxTreeLevel<typename KeyType::ValueType>{} - std::log2(std::ceil(max_extent)) + std::log2(std::ceil(box.lz()));
+    const auto max_extent       = box.maxExtent();
+    const unsigned bx           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
+                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.lx()))),
+                                           1u);
+    const unsigned by           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
+                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.ly()))),
+                                           1u);
+    const unsigned bz           = std::max(maxTreeLevel<typename KeyType::ValueType>{} -
+                                               static_cast<unsigned>(std::ceil(std::log2(max_extent / box.lz()))),
+                                           1u);
     const unsigned cubeLength_x = (1u << bx);
     const unsigned cubeLength_y = (1u << by);
     const unsigned cubeLength_z = (1u << bz);

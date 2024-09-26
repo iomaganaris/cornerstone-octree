@@ -56,7 +56,7 @@ TEST(CoordinateSamples, randomMixDContainerIsSorted)
     using IntegerType = unsigned;
     int n             = 100;
 
-    Box<real> box{0, 10, 0, 5, 0, 1};
+    Box<real> box{-240, 480, 0, 5, 0, 1};
     RandomCoordinates<real, SfcMixDKind<IntegerType>> c(n, box);
 
     std::vector<IntegerType> testCodes(n);
