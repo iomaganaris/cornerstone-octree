@@ -393,6 +393,9 @@ void computeSfcKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, s
  * @param[out] codeBegin  output for SFC keys
  * @param[in]  n          number of particles, size of input and output arrays
  * @param[in]  box        coordinate bounding box
+ * @param[in]  bx         number of bits to encode in x dimension
+ * @param[in]  by         number of bits to encode in y dimension
+ * @param[in]  bz         number of bits to encode in z dimension
  */
 template<class T, class KeyType>
 void computeSfcMixDKeys(const T* x,

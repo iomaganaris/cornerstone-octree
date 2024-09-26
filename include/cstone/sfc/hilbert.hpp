@@ -167,7 +167,8 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
         const int n = bits[1] - bits[2];
-        // encode n 2D levels with 2D-Hilbert and add to key
+        // encode n 2D levels with 2D-Hilbert and add it to the key
+        // 2D key needs to be computed only for n bits
         const KeyType key_2D =
             iHilbert2D<KeyType>(sorted_coordinates[0] >> bits[2], sorted_coordinates[1] >> bits[2], n);
         // IM: Check if we want to the 2D key together or break it from 2 bits per level to 3 bits per level
