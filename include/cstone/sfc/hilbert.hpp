@@ -445,4 +445,38 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
     return hilbertIBox(keyStart, treeLevel(keyEnd - keyStart));
 }
 
+/*! @brief compute the 3D integer coordinate box that contains the key range
+ *
+ * @tparam KeyType   32- or 64-bit unsigned integer
+ * @param  keyStart  lower Hilbert key
+ * @param  keyEnd    upper Hilbert key
+ * @return           the integer box that contains the given key range
+ */
+template<class KeyType>
+HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    assert(level <= maxTreeLevel<KeyType>{});
+    constexpr unsigned maxCoord = 1u << maxTreeLevel<KeyType>{};
+    unsigned cubeLength         = maxCoord >> level;
+    unsigned mask               = ~(cubeLength - 1);
+
+    auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
+
+    // round integer coordinates down to corner closest to origin
+    ix &= mask;
+    iy &= mask;
+    iz &= mask;
+
+    return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
+}
+
+//! @brief convenience wrapper
+template<class KeyType>
+HOST_DEVICE_FUN IBox
+hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    assert(keyStart <= keyEnd);
+    return hilbertMixDIBox(keyStart, treeLevel(keyEnd - keyStart), bx, by, bz);
+}
+
 } // namespace cstone
