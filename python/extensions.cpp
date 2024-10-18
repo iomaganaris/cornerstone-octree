@@ -31,9 +31,10 @@ constexpr util::tuple<int, int, int> decodeHilbertMixD_wrapper(int key, int bx, 
                                                static_cast<unsigned>(by), static_cast<unsigned>(bz));
 };
 
-std::pair<unsigned, std::vector<unsigned>> spanSfcRange(int x, int y, int output_size)
+std::pair<unsigned, std::vector<unsigned>> spanSfcRange(int x, int y)
 {
-    auto output  = std::make_pair<unsigned, std::vector<unsigned>>(0, std::vector<unsigned>(output_size));
+    const auto output_size = cstone::spanSfcRange(static_cast<unsigned>(x), static_cast<unsigned>(y), nullptr);
+    auto output            = std::make_pair<unsigned, std::vector<unsigned>>(0, std::vector<unsigned>(output_size));
     output.first = cstone::spanSfcRange(static_cast<unsigned>(x), static_cast<unsigned>(y), output.second.data());
     return output;
 }
