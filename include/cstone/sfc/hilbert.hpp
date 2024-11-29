@@ -455,19 +455,23 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
 template<class KeyType>
 HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    assert(level <= maxTreeLevel<KeyType>{});
-    constexpr unsigned maxCoord = 1u << maxTreeLevel<KeyType>{};
-    unsigned cubeLength         = maxCoord >> level;
-    unsigned mask               = ~(cubeLength - 1);
+    assert(level <= bx || level <= by || level <= bz);
+    const unsigned octLevel    = maxTreeLevel<KeyType>{} - level;
+    const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
+    const unsigned cubeLengthY = (1u << std::min(by, octLevel));
+    const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
+    unsigned maskX             = ~(cubeLengthX - 1);
+    unsigned maskY             = ~(cubeLengthY - 1);
+    unsigned maskZ             = ~(cubeLengthZ - 1);
 
     auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
 
     // round integer coordinates down to corner closest to origin
-    ix &= mask;
-    iy &= mask;
-    iz &= mask;
+    ix &= maskX;
+    iy &= maskY;
+    iz &= maskZ;
 
-    return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
+    return IBox(ix, ix + cubeLengthX, iy, iy + cubeLengthY, iz, iz + cubeLengthZ);
 }
 
 //! @brief convenience wrapper

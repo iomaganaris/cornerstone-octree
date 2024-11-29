@@ -173,7 +173,7 @@ HOST_DEVICE_FUN constexpr int commonPrefix(KeyType key1, KeyType key2)
 template<class KeyType>
 HOST_DEVICE_FUN constexpr unsigned treeLevel(KeyType codeRange)
 {
-    assert(isPowerOf8(codeRange));
+    // assert(isPowerOf8(codeRange)); // IM: Can't understand why this is necessary
     return (countLeadingZeros(codeRange - 1) - unusedBits<KeyType>{}) / 3;
 }
 
@@ -367,6 +367,8 @@ HOST_DEVICE_FUN constexpr KeyType octalPower(int pos)
  *  This convention is chosen such that the positional value coincides with the corresponding octree
  *  subdivision level.
  */
+// finds distance between 2 SFC keys (to be used together with hilbertIBox to plot the boxes in between the 2 keys in
+// the real world)
 template<class KeyType, class Store>
 HOST_DEVICE_FUN std::enable_if_t<std::is_same_v<Store, std::nullptr_t> || std::is_same_v<Store, KeyType*>, int>
 spanSfcRange(KeyType a, KeyType b, [[maybe_unused]] Store output)
