@@ -455,8 +455,8 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
 template<class KeyType>
 HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    assert(level <= bx || level <= by || level <= bz);
-    const unsigned octLevel    = maxTreeLevel<KeyType>{} - level;
+    const unsigned octLevel = maxTreeLevel<KeyType>{} - level;
+    assert(octLevel <= bx || octLevel <= by || octLevel <= bz);
     const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
     const unsigned cubeLengthY = (1u << std::min(by, octLevel));
     const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
