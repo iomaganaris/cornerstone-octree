@@ -131,9 +131,8 @@ def plot_combined(pa, pb, particles, pabIBox, pabIBoxMixD):
     ax.legend()
     plt.show()
 
-
-bx = 6
-by = 4
+bx = 4
+by = 6
 bz = 2
 max_level = 10
 assert bx <= max_level and by <= max_level and bz <= max_level
@@ -143,8 +142,8 @@ particles = create_random_particles(pow2_x_range=bx, pow2_y_range=by, pow2_z_ran
 
 sorted_particles = sort_particles_by_distance(particles)
 
-pa = sorted_particles[0]
-pb = sorted_particles[-1]
+pa = sorted_particles[5]
+pb = sorted_particles[7]
 
 print(pa, pb)
 
@@ -154,7 +153,7 @@ pb_iHilbert_key = iHilbert(pb[0], pb[1], pb[2], max_level)
 print("Particle A iHilbert key: {}\toct: {}\tbin: {}".format(pa_iHilbert_key, oct(pa_iHilbert_key), bin(pa_iHilbert_key)))
 print("Partic;e B iHilbert key: {}\toct: {}\tbin: {}".format(pb_iHilbert_key, oct(pb_iHilbert_key), bin(pb_iHilbert_key)))
 
-num_values, span_sfc = spanSfcRange(pa_iHilbert_key, pb_iHilbert_key)
+num_values, span_sfc = spanSfcRange(min(pa_iHilbert_key, pb_iHilbert_key), max(pa_iHilbert_key, pb_iHilbert_key))
 
 print("Number of values between A and B:", num_values)
 print("Octal values of span_sfc:")
@@ -163,10 +162,10 @@ print("\n".join([oct(key) for key in span_sfc]))
 pa_iHilbertMixD_key = iHilbertMixD(pa[0], pa[1], pa[2], bx, by, bz)
 pb_iHilbertMixD_key = iHilbertMixD(pb[0], pb[1], pb[2], bx, by, bz)
 
-print("Particle A iHilbert key: {}\toct: {}\tbin: {}".format(pa_iHilbertMixD_key, oct(pa_iHilbertMixD_key), bin(pa_iHilbertMixD_key)))
-print("Partic;e B iHilbert key: {}\toct: {}\tbin: {}".format(pb_iHilbertMixD_key, oct(pb_iHilbertMixD_key), bin(pb_iHilbertMixD_key)))
+print("Particle A iHilbertMixD key: {}\toct: {}\tbin: {}".format(pa_iHilbertMixD_key, oct(pa_iHilbertMixD_key), bin(pa_iHilbertMixD_key)))
+print("Partic;e B iHilbertMixD key: {}\toct: {}\tbin: {}".format(pb_iHilbertMixD_key, oct(pb_iHilbertMixD_key), bin(pb_iHilbertMixD_key)))
 
-num_values_mixd, span_sfc_mixd = spanSfcRange(pa_iHilbertMixD_key, pb_iHilbertMixD_key)
+num_values_mixd, span_sfc_mixd = spanSfcRange(min(pa_iHilbertMixD_key, pb_iHilbertMixD_key), max(pa_iHilbertMixD_key, pb_iHilbertMixD_key))
 
 print("Number of values between A and B:", num_values_mixd)
 print("Octal values of span_sfc:")
