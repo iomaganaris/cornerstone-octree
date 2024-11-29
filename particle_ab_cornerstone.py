@@ -131,9 +131,9 @@ def plot_combined(pa, pb, particles, pabIBox, pabIBoxMixD):
     ax.legend()
     plt.show()
 
-bx = 4
-by = 6
-bz = 2
+bx = 10
+by = 1
+bz = 10
 max_level = 10
 assert bx <= max_level and by <= max_level and bz <= max_level
 nparticles = 200
