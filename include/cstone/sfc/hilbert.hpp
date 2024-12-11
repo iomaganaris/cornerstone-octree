@@ -428,15 +428,12 @@ HOST_DEVICE_FUN IBox hilbertIBox(KeyType keyStart, unsigned level) noexcept
     constexpr unsigned maxCoord = 1u << maxTreeLevel<KeyType>{};
     unsigned cubeLength         = maxCoord >> level;
     unsigned mask               = ~(cubeLength - 1);
-    std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
-    auto [ix, iy, iz] = decodeHilbert(keyStart);
+    auto [ix, iy, iz]           = decodeHilbert(keyStart);
 
     // round integer coordinates down to corner closest to origin
     ix &= mask;
     iy &= mask;
     iz &= mask;
-    std::cout << "ix: " << std::bitset<32>(ix) << " iy: " << std::bitset<32>(iy) << " iz: " << std::bitset<32>(iz)
-              << std::endl;
 
     return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
 }
