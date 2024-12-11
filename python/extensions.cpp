@@ -39,6 +39,16 @@ std::pair<unsigned, std::vector<unsigned>> spanSfcRange(int x, int y)
     return output;
 }
 
+std::pair<unsigned, std::vector<unsigned>> spanSfcRangeMixD(int x, int y, int bx, int by, int bz)
+{
+    const auto output_size =
+        cstone::spanSfcRangeMixD(static_cast<unsigned>(x), static_cast<unsigned>(y), nullptr, bx, by, bz);
+    auto output = std::make_pair<unsigned, std::vector<unsigned>>(0, std::vector<unsigned>(output_size));
+    output.first =
+        cstone::spanSfcRangeMixD(static_cast<unsigned>(x), static_cast<unsigned>(y), output.second.data(), bx, by, bz);
+    return output;
+}
+
 cstone::IBox hilbertIBoxKeys_wrapper(int keyStart, unsigned keyEnd) noexcept
 {
     return cstone::hilbertIBoxKeys<unsigned>(static_cast<unsigned>(keyStart), static_cast<unsigned>(keyEnd));
@@ -65,6 +75,7 @@ NB_MODULE(cornerstone, m)
     m.def("iHilbertMixD", &iHilbertMixD_wrapper);
     m.def("decodeHilbertMixD", &decodeHilbertMixD_wrapper);
     m.def("spanSfcRange", &spanSfcRange);
+    m.def("spanSfcRangeMixD", &spanSfcRangeMixD);
     m.def("hilbertIBoxKeys", &hilbertIBoxKeys_wrapper);
     m.def("hilbertMixDIBoxKeys", &hilbertMixDIBoxKeys_wrapper);
 }

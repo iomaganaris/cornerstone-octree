@@ -40,6 +40,8 @@
 
 #pragma once
 
+#include <iostream>
+
 #include "morton.hpp"
 
 namespace cstone
@@ -455,14 +457,21 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
 template<class KeyType>
 HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
+    std::cout << "keyStart: " << std::oct << keyStart << std::dec << " level: " << level << " bx: " << bx
+              << " by: " << by << " bz: " << bz << std::endl;
+    // find the maximum level (or length) each dimension can expand to from the LSB
     const unsigned octLevel = maxTreeLevel<KeyType>{} - level;
+    // make sure it's smaller than what can be represented in each dimension
     assert(octLevel <= bx || octLevel <= by || octLevel <= bz);
+    // calculate the cubeLength for each dimension based on the maximum each dimension can expand to
     const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
     const unsigned cubeLengthY = (1u << std::min(by, octLevel));
     const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
-    unsigned maskX             = ~(cubeLengthX - 1);
-    unsigned maskY             = ~(cubeLengthY - 1);
-    unsigned maskZ             = ~(cubeLengthZ - 1);
+    std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
+              << std::endl;
+    unsigned maskX = ~(cubeLengthX - 1);
+    unsigned maskY = ~(cubeLengthY - 1);
+    unsigned maskZ = ~(cubeLengthZ - 1);
 
     auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
 
@@ -480,6 +489,7 @@ HOST_DEVICE_FUN IBox
 hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
 {
     assert(keyStart <= keyEnd);
+    // treeLevel gives us home many levels (oct bits) are the same between the 2 keys starting from the MSB
     return hilbertMixDIBox(keyStart, treeLevel(keyEnd - keyStart), bx, by, bz);
 }
 
