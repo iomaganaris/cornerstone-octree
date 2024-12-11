@@ -428,13 +428,15 @@ HOST_DEVICE_FUN IBox hilbertIBox(KeyType keyStart, unsigned level) noexcept
     constexpr unsigned maxCoord = 1u << maxTreeLevel<KeyType>{};
     unsigned cubeLength         = maxCoord >> level;
     unsigned mask               = ~(cubeLength - 1);
-
+    std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
     auto [ix, iy, iz] = decodeHilbert(keyStart);
 
     // round integer coordinates down to corner closest to origin
     ix &= mask;
     iy &= mask;
     iz &= mask;
+    std::cout << "ix: " << std::bitset<32>(ix) << " iy: " << std::bitset<32>(iy) << " iz: " << std::bitset<32>(iz)
+              << std::endl;
 
     return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
 }
@@ -457,21 +459,17 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
 template<class KeyType>
 HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    std::cout << "keyStart: " << std::oct << keyStart << std::dec << " level: " << level << " bx: " << bx
-              << " by: " << by << " bz: " << bz << std::endl;
     // find the maximum level (or length) each dimension can expand to from the LSB
     const unsigned octLevel = maxTreeLevel<KeyType>{} - level;
     // make sure it's smaller than what can be represented in each dimension
     assert(octLevel <= bx || octLevel <= by || octLevel <= bz);
     // calculate the cubeLength for each dimension based on the maximum each dimension can expand to
-    const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
-    const unsigned cubeLengthY = (1u << std::min(by, octLevel));
-    const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
-    std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
-              << std::endl;
-    unsigned maskX = ~(cubeLengthX - 1);
-    unsigned maskY = ~(cubeLengthY - 1);
-    unsigned maskZ = ~(cubeLengthZ - 1);
+    const unsigned cubeLengthX = (1u << std::min(bx - 1, octLevel));
+    const unsigned cubeLengthY = (1u << std::min(by - 1, octLevel));
+    const unsigned cubeLengthZ = (1u << std::min(bz - 1, octLevel));
+    unsigned maskX             = ~(cubeLengthX - 1);
+    unsigned maskY             = ~(cubeLengthY - 1);
+    unsigned maskZ             = ~(cubeLengthZ - 1);
 
     auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
 
