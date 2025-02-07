@@ -4,6 +4,16 @@
 
 using namespace cstone;
 
+TEST(MixedHilbert, increaseKey)
+{
+    unsigned a{};
+    EXPECT_EQ(increaseKey(a, 10, 1, 1, 1), 1u);
+    unsigned b{760};                               // 1370 octal
+    EXPECT_EQ(increaseKey(b, 10, 8, 4, 2), 761u);  // 1371 octal
+    unsigned c{767};                               // 1377 octal
+    EXPECT_EQ(increaseKey(c, 10, 8, 4, 2), 1024u); // 2000 octal
+}
+
 TEST(MixedHilbertBox, x10y9z9)
 {
     unsigned bx = 10, by = 9, bz = 9;
