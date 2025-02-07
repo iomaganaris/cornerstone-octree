@@ -371,7 +371,6 @@ HOST_DEVICE_FUN constexpr KeyType increaseKey(KeyType key, int pos, unsigned b0,
     if (octal_digit + 1 <= max) { key += octalPower<KeyType>(pos); }
     else
     {
-        ;
         key &= ~(7 << 3 * pos_from_left);
         key = increaseKey(key, pos - 1, b0, b1, b2);
     }
@@ -406,7 +405,7 @@ template<class KeyType, class Store>
 HOST_DEVICE_FUN std::enable_if_t<std::is_same_v<Store, std::nullptr_t> || std::is_same_v<Store, KeyType*>, int>
 spanSfcRange(KeyType a, KeyType b, [[maybe_unused]] Store output)
 {
-    assert(b > a);
+    assert(b >= a);
     int numValues = 0;
     // position of first differing octal digit place
     int ab_first_diff_pos = (countLeadingZeros(a ^ b) + 3 - unusedBits<KeyType>{}) / 3;
