@@ -429,12 +429,19 @@ HOST_DEVICE_FUN IBox hilbertIBox(KeyType keyStart, unsigned level) noexcept
     unsigned cubeLength         = maxCoord >> level;
     unsigned mask               = ~(cubeLength - 1);
     auto [ix, iy, iz]           = decodeHilbert(keyStart);
+    std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
+    std::cout << "level: " << level << std::endl;
+    std::cout << "cubeLength: " << cubeLength << std::endl;
+    std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
+    std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+              << std::dec << std::endl;
 
     // round integer coordinates down to corner closest to origin
     ix &= mask;
     iy &= mask;
     iz &= mask;
-
+    std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+              << std::dec << std::endl;
     return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
 }
 
@@ -460,20 +467,31 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned 
     const unsigned octLevel = maxTreeLevel<KeyType>{} - level;
     // make sure it's smaller than what can be represented in each dimension
     assert(octLevel <= bx || octLevel <= by || octLevel <= bz);
+    std::cout << "level: " << level << std::endl;
+    std::cout << "octLevel: " << octLevel << std::endl;
+
     // calculate the cubeLength for each dimension based on the maximum each dimension can expand to
-    const unsigned cubeLengthX = (1u << std::min(bx - 1, octLevel));
-    const unsigned cubeLengthY = (1u << std::min(by - 1, octLevel));
-    const unsigned cubeLengthZ = (1u << std::min(bz - 1, octLevel));
-    unsigned maskX             = ~(cubeLengthX - 1);
-    unsigned maskY             = ~(cubeLengthY - 1);
-    unsigned maskZ             = ~(cubeLengthZ - 1);
+    const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
+    const unsigned cubeLengthY = (1u << std::min(by, octLevel));
+    const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
+    std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
+              << std::endl;
+    unsigned maskX = ~(cubeLengthX - 1);
+    unsigned maskY = ~(cubeLengthY - 1);
+    unsigned maskZ = ~(cubeLengthZ - 1);
+    std::cout << "maskX: " << std::bitset<32>(maskX) << " maskY: " << std::bitset<32>(maskY)
+              << " maskZ: " << std::bitset<32>(maskZ) << std::endl;
 
     auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
+    std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+              << std::dec << std::endl;
 
     // round integer coordinates down to corner closest to origin
     ix &= maskX;
     iy &= maskY;
     iz &= maskZ;
+    std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+              << std::dec << std::endl;
 
     return IBox(ix, ix + cubeLengthX, iy, iy + cubeLengthY, iz, iz + cubeLengthZ);
 }
@@ -485,7 +503,17 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
 {
     assert(keyStart <= keyEnd);
     // treeLevel gives us home many levels (oct bits) are the same between the 2 keys starting from the MSB
-    return hilbertMixDIBox(keyStart, treeLevel(keyEnd - keyStart), bx, by, bz);
+    std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
+    std::cout << "keyEnd (octal): " << std::oct << keyEnd << std::dec << std::endl;
+    KeyType diff{};
+    for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
+    {
+        diff++;
+    }
+    std::cout << "diff: " << diff << std::endl;
+    std::cout << "treeLevel(diff): " << treeLevel(diff) << std::endl;
+    std::cout << "treeLevel(keyEnd - keyStart): " << treeLevel(keyEnd - keyStart) << std::endl;
+    return hilbertMixDIBox(keyStart, treeLevel(diff), bx, by, bz);
 }
 
 } // namespace cstone
