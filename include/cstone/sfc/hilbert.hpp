@@ -461,19 +461,36 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
  * @return           the integer box that contains the given key range
  */
 template<class KeyType>
-HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
+HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    // find the maximum level (or length) each dimension can expand to from the LSB
-    const unsigned octLevel = maxTreeLevel<KeyType>{} - level;
-    // make sure it's smaller than what can be represented in each dimension
-    assert(octLevel <= bx || octLevel <= by || octLevel <= bz);
-    std::cout << "level: " << level << std::endl;
-    std::cout << "octLevel: " << octLevel << std::endl;
-
-    // calculate the cubeLength for each dimension based on the maximum each dimension can expand to
-    const unsigned cubeLengthX = (1u << std::min(bx, octLevel));
-    const unsigned cubeLengthY = (1u << std::min(by, octLevel));
-    const unsigned cubeLengthZ = (1u << std::min(bz, octLevel));
+    assert(keyStart < keyEnd);
+    // find how many octal shifts are necessary for keyStart and keyEnd to have the same tree level
+    // i.e. 0,7: 0, 1000000, 1001000: 3
+    KeyType keyStartCopy{keyStart};
+    KeyType keyEndCopy{keyEnd};
+    unsigned keyStartLevel{};
+    for (; keyStartCopy > 0; keyStartCopy >>= 3)
+    {
+        keyStartLevel++;
+    }
+    std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
+    keyStartCopy = keyStart;
+    unsigned maxCommonRootLevel{};
+    while (keyStartCopy != keyEndCopy)
+    {
+        keyStartCopy >>= 3;
+        keyEndCopy >>= 3;
+        maxCommonRootLevel++;
+    }
+    maxCommonRootLevel--;
+    std::cout << "maxCommonRootLevel: " << maxCommonRootLevel << std::endl;
+    if (maxCommonRootLevel >= keyStartLevel) { maxCommonRootLevel--; }
+    // unsigned keyDiffLevels = keyStartLevel > maxCommonRootLevel ? maxCommonRootLevel - 1 : maxCommonRootLevel -
+    // keyStartLevel; std::cout << "keyDiffLevels: " << keyDiffLevels << std::endl; calculate the cubeLength for each
+    // dimension based on the maximum each dimension can expand to
+    const unsigned cubeLengthX = (1u << std::min(bx, maxCommonRootLevel));
+    const unsigned cubeLengthY = (1u << std::min(by, maxCommonRootLevel));
+    const unsigned cubeLengthZ = (1u << std::min(bz, maxCommonRootLevel));
     std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
               << std::endl;
     unsigned maskX = ~(cubeLengthX - 1);
@@ -501,7 +518,7 @@ template<class KeyType>
 HOST_DEVICE_FUN IBox
 hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    assert(keyStart <= keyEnd);
+    assert(keyStart < keyEnd);
     // treeLevel gives us home many levels (oct bits) are the same between the 2 keys starting from the MSB
     std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
     std::cout << "keyEnd (octal): " << std::oct << keyEnd << std::dec << std::endl;
@@ -513,7 +530,13 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
     std::cout << "diff: " << diff << std::endl;
     std::cout << "treeLevel(diff): " << treeLevel(diff) << std::endl;
     std::cout << "treeLevel(keyEnd - keyStart): " << treeLevel(keyEnd - keyStart) << std::endl;
-    return hilbertMixDIBox(keyStart, treeLevel(diff), bx, by, bz);
+    // std::cout << "countLeadingZeros(diff): " << countLeadingZeros(diff) << std::endl;
+    // std::cout << "treeLevelMixD(diff, bx, by, bz): " << treeLevelMixD(diff, treeLevel(keyStart), bx, by, bz) <<
+    // std::endl; maxTreeLevel<KeyType>{} - treeLevelMixD(diff, bx, by, bz) needs to take into account the starting
+    // level (keyStart) for this computation return hilbertMixDIBox(keyStart, maxTreeLevel<KeyType>{} -
+    // treeLevelMixD(diff, maxTreeLevel<KeyType>{} - treeLevel(keyStart), bx, by, bz), bx, by, bz); return
+    // hilbertMixDIBox(keyStart, treeLevel(diff), bx, by, bz);
+    return hilbertMixDIBox(keyStart, keyEnd, bx, by, bz);
 }
 
 } // namespace cstone
