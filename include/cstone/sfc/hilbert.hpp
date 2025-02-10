@@ -469,12 +469,18 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned 
     KeyType keyStartCopy{keyStart};
     KeyType keyEndCopy{keyEnd};
     unsigned keyStartLevel{};
+    unsigned keyEndLevel{};
     for (; keyStartCopy > 0; keyStartCopy >>= 3)
     {
         keyStartLevel++;
     }
+    for (; keyEndCopy > 0; keyEndCopy >>= 3)
+    {
+        keyEndLevel++;
+    }
     std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
     keyStartCopy = keyStart;
+    keyEndCopy   = keyEnd;
     unsigned maxCommonRootLevel{};
     while (keyStartCopy != keyEndCopy)
     {
@@ -482,15 +488,18 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned 
         keyEndCopy >>= 3;
         maxCommonRootLevel++;
     }
-    maxCommonRootLevel--;
+    // maxCommonRootLevel--;
     std::cout << "maxCommonRootLevel: " << maxCommonRootLevel << std::endl;
-    if (maxCommonRootLevel >= keyStartLevel) { maxCommonRootLevel--; }
+    unsigned diff{};
+    if (keyStartLevel > maxCommonRootLevel) { diff = maxCommonRootLevel - 1; }
+    else { diff = 2 * maxCommonRootLevel - keyStartLevel - 3; }
+    std::cout << "diff: " << diff << std::endl;
     // unsigned keyDiffLevels = keyStartLevel > maxCommonRootLevel ? maxCommonRootLevel - 1 : maxCommonRootLevel -
     // keyStartLevel; std::cout << "keyDiffLevels: " << keyDiffLevels << std::endl; calculate the cubeLength for each
     // dimension based on the maximum each dimension can expand to
-    const unsigned cubeLengthX = (1u << std::min(bx, maxCommonRootLevel));
-    const unsigned cubeLengthY = (1u << std::min(by, maxCommonRootLevel));
-    const unsigned cubeLengthZ = (1u << std::min(bz, maxCommonRootLevel));
+    const unsigned cubeLengthX = (1u << std::min(bx, diff));
+    const unsigned cubeLengthY = (1u << std::min(by, diff));
+    const unsigned cubeLengthZ = (1u << std::min(bz, diff));
     std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
               << std::endl;
     unsigned maskX = ~(cubeLengthX - 1);
