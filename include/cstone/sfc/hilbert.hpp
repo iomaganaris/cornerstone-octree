@@ -469,15 +469,52 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned 
     KeyType keyStartCopy{keyStart};
     KeyType keyEndCopy{keyEnd};
     unsigned keyStartLevel{};
-    unsigned keyEndLevel{};
+    // unsigned keyEndLevel{};
     for (; keyStartCopy > 0; keyStartCopy >>= 3)
     {
         keyStartLevel++;
     }
-    for (; keyEndCopy > 0; keyEndCopy >>= 3)
+    // for (; keyEndCopy > 0; keyEndCopy >>= 3)
+    // {
+    //     keyEndLevel++;
+    // }
+    KeyType arithmetic_diff{};
+    for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
     {
-        keyEndLevel++;
+        arithmetic_diff++;
     }
+    // Find the smallest number equal or larger than arithmetic_diff which is a power of 8
+    unsigned nextPowerOf8 = 1;
+    while (nextPowerOf8 < arithmetic_diff)
+    {
+        nextPowerOf8 <<= 3;
+    }
+    unsigned numDigits = 0;
+    for (unsigned temp = nextPowerOf8; temp > 0; temp >>= 3)
+    {
+        numDigits++;
+        if (temp >> 3 == 0) {}
+    }
+    std::cout << "nextPowerOf8: " << nextPowerOf8 << " has " << numDigits << " digits." << std::endl;
+    std::cout << "arithmetic_diff: " << arithmetic_diff << " octal: " << std::oct << arithmetic_diff << std::dec
+              << std::endl;
+    unsigned arithmetic_diff_level{};
+    unsigned newCubeLengthX{};
+    unsigned newCubeLengthY{};
+    unsigned newCubeLengthZ{};
+    for (; arithmetic_diff > 0; arithmetic_diff >>= 3)
+    {
+        arithmetic_diff_level++;
+        if ((arithmetic_diff >> 3) == 0)
+        {
+            newCubeLengthX = std::min(1u << bx, (1u << arithmetic_diff_level) * arithmetic_diff);
+            newCubeLengthY = std::min(1u << by, (1u << arithmetic_diff_level) * arithmetic_diff);
+            newCubeLengthZ = std::min(1u << bz, (1u << arithmetic_diff_level) * arithmetic_diff);
+        }
+    }
+    std::cout << "newCubeLengthX: " << newCubeLengthX << " newCubeLengthY: " << newCubeLengthY
+              << " newCubeLengthZ: " << newCubeLengthZ << std::endl;
+    std::cout << "arithmetic_diff_level: " << arithmetic_diff_level << std::endl;
     std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
     keyStartCopy = keyStart;
     keyEndCopy   = keyEnd;
@@ -488,11 +525,52 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned 
         keyEndCopy >>= 3;
         maxCommonRootLevel++;
     }
+    KeyType arithmetic_diff_common_root_level{};
+    KeyType maxCommonRootLevel_number{1u << maxCommonRootLevel * 3};
+    std::cout << "maxCommonRootLevel_number: " << maxCommonRootLevel_number << " (octal): " << std::oct
+              << maxCommonRootLevel_number << std::dec << std::endl;
+    for (KeyType i{keyStart}; i < maxCommonRootLevel_number; i = increaseKey(i, 10, bx, by, bz))
+    {
+        arithmetic_diff_common_root_level++;
+    }
+    std::cout << "arithmetic_diff_common_root_level: " << arithmetic_diff_common_root_level << " (octal): " << std::oct
+              << arithmetic_diff_common_root_level << std::dec << std::endl;
+    // Find the smallest number equal or larger than arithmetic_diff which is a power of 8
+    unsigned nextPowerOf8_common_root_level = 1;
+    while (nextPowerOf8_common_root_level < arithmetic_diff_common_root_level)
+    {
+        nextPowerOf8_common_root_level <<= 3;
+    }
+    unsigned numDigits_common_root_level = 0;
+    for (unsigned temp = nextPowerOf8_common_root_level; temp > 0; temp >>= 3)
+    {
+        numDigits_common_root_level++;
+    }
+    std::cout << "nextPowerOf8_common_root_level: " << nextPowerOf8_common_root_level << " has "
+              << numDigits_common_root_level << " digits." << std::endl;
     // maxCommonRootLevel--;
     std::cout << "maxCommonRootLevel: " << maxCommonRootLevel << std::endl;
+    std::array<unsigned, 3> sorted_bits{bx, by, bz};
+    std::sort(sorted_bits.begin(), sorted_bits.end());
+    std::cout << "sorted_bits: " << sorted_bits[0] << " " << sorted_bits[1] << " " << sorted_bits[2] << std::endl;
+    unsigned maxCubeLength{1u << (keyStartLevel - 1)};
+    for (unsigned lvl{keyStartLevel}; lvl < maxCommonRootLevel; lvl++)
+    {
+        if (lvl < sorted_bits[0]) { maxCubeLength << 3u; }
+        else if (lvl < sorted_bits[1]) { maxCubeLength << 2u; }
+        else { maxCubeLength << 1u; }
+    }
+    std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
+    std::cout << "maxCubeLength: " << maxCubeLength << std::endl;
     unsigned diff{};
-    if (keyStartLevel > maxCommonRootLevel) { diff = maxCommonRootLevel - 1; }
-    else { diff = 2 * maxCommonRootLevel - keyStartLevel - 3; }
+    if (keyStartLevel > maxCommonRootLevel)
+    {
+        diff          = maxCommonRootLevel - 1;
+        maxCubeLength = 1u << diff;
+    }
+    else { diff = numDigits - 1; };
+    // else { diff = numDigits - 1; }
+    // diff = keyStartLevel + numDigits_common_root_level - 2;
     std::cout << "diff: " << diff << std::endl;
     // unsigned keyDiffLevels = keyStartLevel > maxCommonRootLevel ? maxCommonRootLevel - 1 : maxCommonRootLevel -
     // keyStartLevel; std::cout << "keyDiffLevels: " << keyDiffLevels << std::endl; calculate the cubeLength for each
