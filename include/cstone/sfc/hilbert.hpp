@@ -461,132 +461,20 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
  * @return           the integer box that contains the given key range
  */
 template<class KeyType>
-HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
+HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
-    assert(keyStart < keyEnd);
-    // find how many octal shifts are necessary for keyStart and keyEnd to have the same tree level
-    // i.e. 0,7: 0, 1000000, 1001000: 3
-    KeyType keyStartCopy{keyStart};
-    KeyType keyEndCopy{keyEnd};
-    unsigned keyStartLevel{};
-    // unsigned keyEndLevel{};
-    for (; keyStartCopy > 0; keyStartCopy >>= 3)
-    {
-        keyStartLevel++;
-    }
-    // for (; keyEndCopy > 0; keyEndCopy >>= 3)
-    // {
-    //     keyEndLevel++;
-    // }
-    KeyType arithmetic_diff{};
-    for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
-    {
-        arithmetic_diff++;
-    }
-    // Find the smallest number equal or larger than arithmetic_diff which is a power of 8
-    unsigned nextPowerOf8 = 1;
-    while (nextPowerOf8 < arithmetic_diff)
-    {
-        nextPowerOf8 <<= 3;
-    }
-    unsigned numDigits = 0;
-    for (unsigned temp = nextPowerOf8; temp > 0; temp >>= 3)
-    {
-        numDigits++;
-        if (temp >> 3 == 0) {}
-    }
-    std::cout << "nextPowerOf8: " << nextPowerOf8 << " has " << numDigits << " digits." << std::endl;
-    std::cout << "arithmetic_diff: " << arithmetic_diff << " octal: " << std::oct << arithmetic_diff << std::dec
-              << std::endl;
-    unsigned arithmetic_diff_level{};
-    unsigned newCubeLengthX{};
-    unsigned newCubeLengthY{};
-    unsigned newCubeLengthZ{};
-    for (; arithmetic_diff > 0; arithmetic_diff >>= 3)
-    {
-        arithmetic_diff_level++;
-        if ((arithmetic_diff >> 3) == 0)
-        {
-            newCubeLengthX = std::min(1u << bx, (1u << arithmetic_diff_level) * arithmetic_diff);
-            newCubeLengthY = std::min(1u << by, (1u << arithmetic_diff_level) * arithmetic_diff);
-            newCubeLengthZ = std::min(1u << bz, (1u << arithmetic_diff_level) * arithmetic_diff);
-        }
-    }
-    std::cout << "newCubeLengthX: " << newCubeLengthX << " newCubeLengthY: " << newCubeLengthY
-              << " newCubeLengthZ: " << newCubeLengthZ << std::endl;
-    std::cout << "arithmetic_diff_level: " << arithmetic_diff_level << std::endl;
-    std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
-    keyStartCopy = keyStart;
-    keyEndCopy   = keyEnd;
-    unsigned maxCommonRootLevel{};
-    while (keyStartCopy != keyEndCopy)
-    {
-        keyStartCopy >>= 3;
-        keyEndCopy >>= 3;
-        maxCommonRootLevel++;
-    }
-    KeyType arithmetic_diff_common_root_level{};
-    KeyType maxCommonRootLevel_number{1u << maxCommonRootLevel * 3};
-    std::cout << "maxCommonRootLevel_number: " << maxCommonRootLevel_number << " (octal): " << std::oct
-              << maxCommonRootLevel_number << std::dec << std::endl;
-    for (KeyType i{keyStart}; i < maxCommonRootLevel_number; i = increaseKey(i, 10, bx, by, bz))
-    {
-        arithmetic_diff_common_root_level++;
-    }
-    std::cout << "arithmetic_diff_common_root_level: " << arithmetic_diff_common_root_level << " (octal): " << std::oct
-              << arithmetic_diff_common_root_level << std::dec << std::endl;
-    // Find the smallest number equal or larger than arithmetic_diff which is a power of 8
-    unsigned nextPowerOf8_common_root_level = 1;
-    while (nextPowerOf8_common_root_level < arithmetic_diff_common_root_level)
-    {
-        nextPowerOf8_common_root_level <<= 3;
-    }
-    unsigned numDigits_common_root_level = 0;
-    for (unsigned temp = nextPowerOf8_common_root_level; temp > 0; temp >>= 3)
-    {
-        numDigits_common_root_level++;
-    }
-    std::cout << "nextPowerOf8_common_root_level: " << nextPowerOf8_common_root_level << " has "
-              << numDigits_common_root_level << " digits." << std::endl;
-    // maxCommonRootLevel--;
-    std::cout << "maxCommonRootLevel: " << maxCommonRootLevel << std::endl;
-    std::array<unsigned, 3> sorted_bits{bx, by, bz};
-    std::sort(sorted_bits.begin(), sorted_bits.end());
-    std::cout << "sorted_bits: " << sorted_bits[0] << " " << sorted_bits[1] << " " << sorted_bits[2] << std::endl;
-    unsigned maxCubeLength{1u << (keyStartLevel - 1)};
-    for (unsigned lvl{keyStartLevel}; lvl < maxCommonRootLevel; lvl++)
-    {
-        if (lvl < sorted_bits[0]) { maxCubeLength << 3u; }
-        else if (lvl < sorted_bits[1]) { maxCubeLength << 2u; }
-        else { maxCubeLength << 1u; }
-    }
-    std::cout << "keyStartLevel: " << keyStartLevel << std::endl;
-    std::cout << "maxCubeLength: " << maxCubeLength << std::endl;
-    unsigned diff{};
-    if (keyStartLevel > maxCommonRootLevel)
-    {
-        diff          = maxCommonRootLevel - 1;
-        maxCubeLength = 1u << diff;
-    }
-    else { diff = numDigits - 1; };
-    // else { diff = numDigits - 1; }
-    // diff = keyStartLevel + numDigits_common_root_level - 2;
-    std::cout << "diff: " << diff << std::endl;
-    // unsigned keyDiffLevels = keyStartLevel > maxCommonRootLevel ? maxCommonRootLevel - 1 : maxCommonRootLevel -
-    // keyStartLevel; std::cout << "keyDiffLevels: " << keyDiffLevels << std::endl; calculate the cubeLength for each
-    // dimension based on the maximum each dimension can expand to
-    const unsigned cubeLengthX = (1u << std::min(bx, diff));
-    const unsigned cubeLengthY = (1u << std::min(by, diff));
-    const unsigned cubeLengthZ = (1u << std::min(bz, diff));
+    assert(level <= maxTreeLevel<KeyType>{});
+    unsigned cubeLengthX = 1u << std::min(bx, level);
+    unsigned cubeLengthY = 1u << std::min(by, level);
+    unsigned cubeLengthZ = 1u << std::min(bz, level);
+    unsigned maskX       = ~(cubeLengthX - 1);
+    unsigned maskY       = ~(cubeLengthY - 1);
+    unsigned maskZ       = ~(cubeLengthZ - 1);
+    auto [ix, iy, iz]    = decodeHilbertMixD(keyStart, bx, by, bz);
     std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
               << std::endl;
-    unsigned maskX = ~(cubeLengthX - 1);
-    unsigned maskY = ~(cubeLengthY - 1);
-    unsigned maskZ = ~(cubeLengthZ - 1);
-    std::cout << "maskX: " << std::bitset<32>(maskX) << " maskY: " << std::bitset<32>(maskY)
-              << " maskZ: " << std::bitset<32>(maskZ) << std::endl;
-
-    auto [ix, iy, iz] = decodeHilbertMixD(keyStart, bx, by, bz);
+    // std::cout << "cubeLength: " << cubeLength << std::endl;
+    // std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
     std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
               << std::dec << std::endl;
 
@@ -596,8 +484,23 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, KeyType keyEnd, unsigned 
     iz &= maskZ;
     std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
               << std::dec << std::endl;
-
     return IBox(ix, ix + cubeLengthX, iy, iy + cubeLengthY, iz, iz + cubeLengthZ);
+}
+
+template<class KeyType>
+HOST_DEVICE_FUN constexpr unsigned treeLevelMixD(KeyType codeRange, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    std::array<unsigned, 3> bits{bx, by, bz};
+    std::sort(bits.begin(), bits.end());
+    unsigned level{0};
+    while (codeRange > 1)
+    {
+        if (level < bits[0]) { codeRange >>= 3; }
+        else if (level < bits[1]) { codeRange >>= 2; }
+        else { codeRange >>= 1; }
+        level++;
+    }
+    return level;
 }
 
 //! @brief convenience wrapper
@@ -606,24 +509,16 @@ HOST_DEVICE_FUN IBox
 hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
 {
     assert(keyStart < keyEnd);
-    // treeLevel gives us home many levels (oct bits) are the same between the 2 keys starting from the MSB
     std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
     std::cout << "keyEnd (octal): " << std::oct << keyEnd << std::dec << std::endl;
-    KeyType diff{};
+    unsigned diff{};
     for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
     {
         diff++;
     }
-    std::cout << "diff: " << diff << std::endl;
-    std::cout << "treeLevel(diff): " << treeLevel(diff) << std::endl;
-    std::cout << "treeLevel(keyEnd - keyStart): " << treeLevel(keyEnd - keyStart) << std::endl;
-    // std::cout << "countLeadingZeros(diff): " << countLeadingZeros(diff) << std::endl;
-    // std::cout << "treeLevelMixD(diff, bx, by, bz): " << treeLevelMixD(diff, treeLevel(keyStart), bx, by, bz) <<
-    // std::endl; maxTreeLevel<KeyType>{} - treeLevelMixD(diff, bx, by, bz) needs to take into account the starting
-    // level (keyStart) for this computation return hilbertMixDIBox(keyStart, maxTreeLevel<KeyType>{} -
-    // treeLevelMixD(diff, maxTreeLevel<KeyType>{} - treeLevel(keyStart), bx, by, bz), bx, by, bz); return
-    // hilbertMixDIBox(keyStart, treeLevel(diff), bx, by, bz);
-    return hilbertMixDIBox(keyStart, keyEnd, bx, by, bz);
+    std::cout << "Diff: " << diff << " oct: " << std::oct << diff << std::dec
+              << " bin: " << std::bitset<sizeof(KeyType) * 8>(diff) << std::endl;
+    return hilbertMixDIBox(keyStart, treeLevelMixD(diff, bx, by, bz), bx, by, bz);
 }
 
 } // namespace cstone
