@@ -518,7 +518,8 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
     }
     std::cout << "Diff: " << diff << " oct: " << std::oct << diff << std::dec
               << " bin: " << std::bitset<sizeof(KeyType) * 8>(diff) << std::endl;
-    return hilbertMixDIBox(keyStart, treeLevelMixD(diff, bx, by, bz), bx, by, bz);
+    return hilbertMixDIBox(keyStart, treeLevelMixD(1u << static_cast<unsigned>(std::ceil(std::log2(diff))), bx, by, bz),
+                           bx, by, bz);
 }
 
 } // namespace cstone
