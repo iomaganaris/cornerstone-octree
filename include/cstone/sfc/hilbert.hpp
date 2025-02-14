@@ -511,15 +511,17 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
     assert(keyStart < keyEnd);
     std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
     std::cout << "keyEnd (octal): " << std::oct << keyEnd << std::dec << std::endl;
-    unsigned diff{};
+    KeyType diff{};
     for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
     {
         diff++;
     }
     std::cout << "Diff: " << diff << " oct: " << std::oct << diff << std::dec
               << " bin: " << std::bitset<sizeof(KeyType) * 8>(diff) << std::endl;
-    return hilbertMixDIBox(keyStart, treeLevelMixD(1u << static_cast<unsigned>(std::ceil(std::log2(diff))), bx, by, bz),
-                           bx, by, bz);
+    KeyType adjusted_diff = 1u << static_cast<unsigned>(log2ceil(diff));
+    std::cout << "Adjusted Diff: " << adjusted_diff << " oct: " << std::oct << adjusted_diff << std::dec
+              << " bin: " << std::bitset<sizeof(KeyType) * 8>(adjusted_diff) << std::endl;
+    return hilbertMixDIBox(keyStart, treeLevelMixD(adjusted_diff, bx, by, bz), bx, by, bz);
 }
 
 } // namespace cstone

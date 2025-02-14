@@ -143,6 +143,16 @@ HOST_DEVICE_FUN constexpr unsigned log8ceil(KeyType n)
     return maxTreeLevel<KeyType>{} - (lz - unusedBits<KeyType>{}) / 3;
 }
 
+//! @brief compute ceil(log2(n))
+template<class KeyType>
+HOST_DEVICE_FUN constexpr unsigned log2ceil(KeyType n)
+{
+    if (n == 0) { return 0; }
+
+    unsigned lz = countLeadingZeros(n - 1);
+    return maxTreeLevel<KeyType>{} * 3 - (lz - unusedBits<KeyType>{});
+}
+
 //! @brief check whether n is a power of 8
 template<class KeyType>
 HOST_DEVICE_FUN constexpr bool isPowerOf8(KeyType n)
