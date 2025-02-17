@@ -493,11 +493,12 @@ HOST_DEVICE_FUN constexpr unsigned treeLevelMixD(KeyType codeRange, unsigned bx,
     std::array<unsigned, 3> bits{bx, by, bz};
     std::sort(bits.begin(), bits.end());
     unsigned level{0};
-    while (codeRange > 1)
+    KeyType codeRangeLevel{1};
+    while (codeRange > codeRangeLevel)
     {
-        if (level < bits[0]) { codeRange >>= 3; }
-        else if (level < bits[1]) { codeRange >>= 2; }
-        else { codeRange >>= 1; }
+        if (level < bits[0]) { codeRangeLevel <<= 3; }
+        else if (level < bits[1]) { codeRangeLevel <<= 2; }
+        else { codeRangeLevel <<= 1; }
         level++;
     }
     return level;
@@ -518,10 +519,7 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
     }
     std::cout << "Diff: " << diff << " oct: " << std::oct << diff << std::dec
               << " bin: " << std::bitset<sizeof(KeyType) * 8>(diff) << std::endl;
-    KeyType adjusted_diff = 1u << static_cast<unsigned>(log2ceil(diff));
-    std::cout << "Adjusted Diff: " << adjusted_diff << " oct: " << std::oct << adjusted_diff << std::dec
-              << " bin: " << std::bitset<sizeof(KeyType) * 8>(adjusted_diff) << std::endl;
-    return hilbertMixDIBox(keyStart, treeLevelMixD(adjusted_diff, bx, by, bz), bx, by, bz);
+    return hilbertMixDIBox(keyStart, treeLevelMixD(diff, bx, by, bz), bx, by, bz);
 }
 
 } // namespace cstone
