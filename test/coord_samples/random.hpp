@@ -146,6 +146,7 @@ public:
     const std::vector<T>& y() const { return y_; }
     const std::vector<T>& z() const { return z_; }
     const std::vector<Integer>& particleKeys() const { return codes_; }
+    Box<T> box() const { return box_; }
 
 private:
     Box<T> box_;

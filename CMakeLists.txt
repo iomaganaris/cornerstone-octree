@@ -63,4 +63,4 @@ if(${NB_VER} VERSION_LESS 2.0.0)
 endif()
 
 nanobind_add_module(cornerstone python/extensions.cpp)
-target_include_directories(cornerstone PRIVATE include)
+target_include_directories(cornerstone PRIVATE include test)

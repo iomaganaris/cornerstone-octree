@@ -1,10 +1,12 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
 
 #include "cstone/sfc/common.hpp"
 #include "cstone/sfc/hilbert.hpp"
+#include "coord_samples/random.hpp"
 
 constexpr unsigned iHilbert_wrapper(int px, int py, int pz, int order = cstone::maxTreeLevel<unsigned>{}) noexcept
 {
@@ -49,9 +51,21 @@ std::pair<unsigned, std::vector<unsigned>> spanSfcRangeMixD(int x, int y, int bx
     return output;
 }
 
+cstone::IBox hilbertIBox_wrapper(int keyStart, int level) noexcept
+{
+    return cstone::hilbertIBox<unsigned>(static_cast<unsigned>(keyStart), static_cast<unsigned>(level));
+}
+
 cstone::IBox hilbertIBoxKeys_wrapper(int keyStart, unsigned keyEnd) noexcept
 {
     return cstone::hilbertIBoxKeys<unsigned>(static_cast<unsigned>(keyStart), static_cast<unsigned>(keyEnd));
+}
+
+cstone::IBox hilbertMixDIBox_wrapper(int keyStart, int level, int bx, int by, int bz) noexcept
+{
+    return cstone::hilbertMixDIBox<unsigned>(static_cast<unsigned>(keyStart), static_cast<unsigned>(level),
+                                             static_cast<unsigned>(bx), static_cast<unsigned>(by),
+                                             static_cast<unsigned>(bz));
 }
 
 cstone::IBox hilbertMixDIBoxKeys_wrapper(int keyStart, int keyEnd, int bx, int by, int bz) noexcept
@@ -59,6 +73,50 @@ cstone::IBox hilbertMixDIBoxKeys_wrapper(int keyStart, int keyEnd, int bx, int b
     return cstone::hilbertMixDIBoxKeys<unsigned>(static_cast<unsigned>(keyStart), static_cast<unsigned>(keyEnd),
                                                  static_cast<unsigned>(bx), static_cast<unsigned>(by),
                                                  static_cast<unsigned>(bz));
+}
+
+std::tuple<std::tuple<double, double, double, double, double, double>,
+           std::vector<unsigned>,
+           std::vector<double>,
+           std::vector<double>,
+           std::vector<double>>
+randomCoordinates(int n,
+                  int seed = 42,
+                  int bx   = cstone::maxTreeLevel<unsigned>{},
+                  int by   = cstone::maxTreeLevel<unsigned>{},
+                  int bz   = cstone::maxTreeLevel<unsigned>{})
+{
+    auto random_coords = cstone::RandomCoordinates<double, cstone::SfcKind<unsigned>>(
+        static_cast<size_t>(n),
+        cstone::Box<double>{0, static_cast<double>((1u << (bx * 3)) - 1), 0, static_cast<double>((1u << (by * 3)) - 1),
+                            0, static_cast<double>((1u << (bz * 3)) - 1)},
+        seed);
+    return std::make_tuple(std::make_tuple(random_coords.box().xmin(), random_coords.box().xmax(),
+                                           random_coords.box().ymin(), random_coords.box().ymax(),
+                                           random_coords.box().zmin(), random_coords.box().zmax()),
+                           random_coords.particleKeys(), random_coords.x(), random_coords.y(), random_coords.z());
+}
+
+std::tuple<std::tuple<double, double, double, double, double, double>,
+           std::vector<unsigned>,
+           std::vector<double>,
+           std::vector<double>,
+           std::vector<double>>
+randomCoordinatesMixD(int n,
+                      int seed = 42,
+                      int bx   = cstone::maxTreeLevel<unsigned>{},
+                      int by   = cstone::maxTreeLevel<unsigned>{},
+                      int bz   = cstone::maxTreeLevel<unsigned>{})
+{
+    auto random_coords = cstone::RandomCoordinates<double, cstone::SfcMixDKind<unsigned>>(
+        static_cast<size_t>(n),
+        cstone::Box<double>{0, static_cast<double>((1u << (bx * 3)) - 1), 0, static_cast<double>((1u << (by * 3)) - 1),
+                            0, static_cast<double>((1u << (bz * 3)) - 1)},
+        seed, bx, by, bz);
+    return std::make_tuple(std::make_tuple(random_coords.box().xmin(), random_coords.box().xmax(),
+                                           random_coords.box().ymin(), random_coords.box().ymax(),
+                                           random_coords.box().zmin(), random_coords.box().zmax()),
+                           random_coords.particleKeys(), random_coords.x(), random_coords.y(), random_coords.z());
 }
 
 NB_MODULE(cornerstone, m)
@@ -76,6 +134,10 @@ NB_MODULE(cornerstone, m)
     m.def("decodeHilbertMixD", &decodeHilbertMixD_wrapper);
     m.def("spanSfcRange", &spanSfcRange);
     m.def("spanSfcRangeMixD", &spanSfcRangeMixD);
+    m.def("hilbertIBox", &hilbertIBox_wrapper);
     m.def("hilbertIBoxKeys", &hilbertIBoxKeys_wrapper);
+    m.def("hilbertMixDIBox", &hilbertMixDIBox_wrapper);
     m.def("hilbertMixDIBoxKeys", &hilbertMixDIBoxKeys_wrapper);
+    m.def("randomCoordinates", &randomCoordinates);
+    m.def("randomCoordinatesMixD", &randomCoordinatesMixD);
 }
