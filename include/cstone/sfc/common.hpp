@@ -185,8 +185,7 @@ HOST_DEVICE_FUN constexpr int commonPrefix(KeyType key1, KeyType key2)
 template<class KeyType>
 HOST_DEVICE_FUN constexpr unsigned treeLevel(KeyType codeRange)
 {
-    // assert(isPowerOf8(codeRange)); // IM: Can't understand why this is necessary (assertion is not always true for
-    // mixed dimensions)
+    assert(isPowerOf8(codeRange));
     return (countLeadingZeros(codeRange - 1) - unusedBits<KeyType>{}) / 3;
 }
 

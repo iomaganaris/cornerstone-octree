@@ -429,19 +429,19 @@ HOST_DEVICE_FUN IBox hilbertIBox(KeyType keyStart, unsigned level) noexcept
     unsigned cubeLength         = maxCoord >> level;
     unsigned mask               = ~(cubeLength - 1);
     auto [ix, iy, iz]           = decodeHilbert(keyStart);
-    std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
-    std::cout << "level: " << level << std::endl;
-    std::cout << "cubeLength: " << cubeLength << std::endl;
-    std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
-    std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
-              << std::dec << std::endl;
+    // std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
+    // std::cout << "level: " << level << std::endl;
+    // std::cout << "cubeLength: " << cubeLength << std::endl;
+    // std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
+    // std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+    //           << std::dec << std::endl;
 
     // round integer coordinates down to corner closest to origin
     ix &= mask;
     iy &= mask;
     iz &= mask;
-    std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
-              << std::dec << std::endl;
+    // std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+    //           << std::dec << std::endl;
     return IBox(ix, ix + cubeLength, iy, iy + cubeLength, iz, iz + cubeLength);
 }
 
@@ -471,19 +471,19 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned 
     unsigned maskY       = ~(cubeLengthY - 1);
     unsigned maskZ       = ~(cubeLengthZ - 1);
     auto [ix, iy, iz]    = decodeHilbertMixD(keyStart, bx, by, bz);
-    std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
-              << std::endl;
+    // std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
+    //   << std::endl;
     // std::cout << "cubeLength: " << cubeLength << std::endl;
     // std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
-    std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
-              << std::dec << std::endl;
+    // std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+    //   << std::dec << std::endl;
 
     // round integer coordinates down to corner closest to origin
     ix &= maskX;
     iy &= maskY;
     iz &= maskZ;
-    std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
-              << std::dec << std::endl;
+    // std::cout << "[after mask]  ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
+    //   << std::dec << std::endl;
     return IBox(ix, ix + cubeLengthX, iy, iy + cubeLengthY, iz, iz + cubeLengthZ);
 }
 
@@ -512,6 +512,12 @@ hilbertMixDIBoxKeys(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, 
     assert(keyStart < keyEnd);
     std::cout << "keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
     std::cout << "keyEnd (octal): " << std::oct << keyEnd << std::dec << std::endl;
+    // keyEnd - keyStart needs to be power of 8
+    // check if octree nodes work with
+    // return hilbertMixDIBox(keyStart, treeLevel(keyEnd-keyStart), bx, by, bz);
+    // what if keyStart 1377 and keyEnd 2000? -> shouldn't be a case like that because hilbertMixDIBoxKeys should only
+    // take octree nodes' keys if keyStart is outside the bx, by, bz bounds, then the returned box edges should be
+    // (0,0,0)
     KeyType diff{};
     for (KeyType i{keyStart}; i < keyEnd; i = increaseKey(i, 10, bx, by, bz))
     {
