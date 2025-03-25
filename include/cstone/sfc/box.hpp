@@ -350,6 +350,30 @@ constexpr HOST_DEVICE_FUN util::tuple<Vec3<T>, Vec3<T>> centerAndSize(const IBox
     return {boxCenter, boxSize};
 }
 
+template<class KeyType, class T>
+constexpr HOST_DEVICE_FUN util::tuple<Vec3<T>, Vec3<T>>
+centerAndSize(const IBox& ibox, const Box<T>& box, unsigned bx, unsigned by, unsigned bz)
+{
+    constexpr int maxCoord = 1u << maxTreeLevel<KeyType>{};
+    // smallest octree cell edge length in unit cube
+    constexpr T uL = T(1.) / maxCoord;
+
+    // std::cout << "ibox " << ibox.xmin() << " " << ibox.xmax() << " " << ibox.ymin() << " " << ibox.ymax() << " " <<
+    // ibox.zmin() << " " << ibox.zmax() << std::endl; std::cout << "box " << box.xmin() << " " << box.xmax() << " " <<
+    // box.ymin() << " " << box.ymax() << " " << box.zmin() << " " << box.zmax() << std::endl;
+
+    T halfUnitLengthX = T(0.5) * box.lx() / (1u << bx);
+    T halfUnitLengthY = T(0.5) * box.ly() / (1u << by);
+    T halfUnitLengthZ = T(0.5) * box.lz() / (1u << bz);
+    Vec3<T> boxCenter = {box.xmin() + (ibox.xmax() + ibox.xmin()) * halfUnitLengthX,
+                         box.ymin() + (ibox.ymax() + ibox.ymin()) * halfUnitLengthY,
+                         box.zmin() + (ibox.zmax() + ibox.zmin()) * halfUnitLengthZ};
+    Vec3<T> boxSize   = {(ibox.xmax() - ibox.xmin()) * halfUnitLengthX, (ibox.ymax() - ibox.ymin()) * halfUnitLengthY,
+                         (ibox.zmax() - ibox.zmin()) * halfUnitLengthZ};
+
+    return {boxCenter, boxSize};
+}
+
 /*! @brief create a floating point box from and integer box
  *
  * @tparam T         float or double

@@ -153,6 +153,41 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>*
         unsigned level                  = decodePrefixLength(prefix) / 3;
         auto nodeBox                    = sfcIBox(sfcKey(startKey), level);
         util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box);
+        std::cout << "[nodeFpCenters3D] Center: " << centers[i][0] << ", " << centers[i][1] << ", " << centers[i][2]
+                  << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2] << std::endl;
+    }
+}
+
+//! @brief compute geometric node centers based on node MixD SFC keys and the global bounding box
+template<class KeyType, class T>
+void nodeFpCenters(gsl::span<const KeyType> prefixes,
+                   Vec3<T>* centers,
+                   Vec3<T>* sizes,
+                   const Box<T>& box,
+                   unsigned bx,
+                   unsigned by,
+                   unsigned bz)
+{
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < prefixes.size(); ++i)
+    {
+        KeyType prefix     = prefixes[i];
+        KeyType startKey   = decodePlaceholderBit(prefix);
+        unsigned level     = decodePrefixLength(prefix) / 3;
+        unsigned level_key = octalDigit(startKey, level);
+        // std::cout << "[nodeFpCentersMixD] prefix: " << std::oct << prefix << std::dec << std::endl;
+        // std::cout << "[nodeFpCentersMixD] startKey: " << startKey << " oct: " << std::oct << startKey << std::dec <<
+        // std::endl; std::cout << "[nodeFpCentersMixD] level_key: " << level_key << std::endl;
+        auto nodeBox = sfcIBox(sfcMixDKey<KeyType>(startKey), maxTreeLevel<KeyType>{} - level, bx, by, bz);
+        util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, bx, by, bz);
+        const auto level_from_left      = maxTreeLevel<KeyType>{} - level;
+        std::cout << "level_from_left " << level_from_left << std::endl;
+        if (level_from_left > bx && level_key > 0) { sizes[i] = {0, 0, 0}; }
+        else if (level_from_left <= bx && level_from_left > by && level_key > 1) { sizes[i] = {0, 0, 0}; }
+        else if (level_from_left <= by && level_from_left > bz && level_key > 3) { sizes[i] = {0, 0, 0}; }
+        std::cout << "[nodeFpCentersMixD] i: " << i << " Center: " << centers[i][0] << ", " << centers[i][1] << ", "
+                  << centers[i][2] << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2]
+                  << std::endl;
     }
 }
 

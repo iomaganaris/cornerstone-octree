@@ -316,6 +316,13 @@ HOST_DEVICE_FUN inline std::enable_if_t<IsHilbert<KeyType>{}, IBox> sfcIBox(KeyT
     return hilbertIBox<typename KeyType::ValueType>(keyStart, level);
 }
 
+template<class KeyType>
+HOST_DEVICE_FUN inline std::enable_if_t<IsHilbertMixD<KeyType>{}, IBox>
+sfcIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    return hilbertMixDIBox<typename KeyType::ValueType>(keyStart, level, bx, by, bz);
+}
+
 //! @brief convenience overload
 template<class KeyType>
 HOST_DEVICE_FUN inline IBox sfcIBox(KeyType keyStart, KeyType keyEnd) noexcept
@@ -380,6 +387,8 @@ void computeSfcKeys(const T* x, const T* y, const T* z, KeyType* particleKeys, s
     for (std::size_t i = 0; i < n; ++i)
     {
         particleKeys[i] = sfc3D<KeyType>(x[i], y[i], z[i], box);
+        // std::cout << "[computeSfcKeys] particleKeys[" << i << "] = " << std::oct << particleKeys[i] << std::dec <<
+        // std::endl;
     }
 }
 
@@ -412,6 +421,8 @@ void computeSfcMixDKeys(const T* x,
     for (std::size_t i = 0; i < n; ++i)
     {
         particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box, bx, by, bz);
+        // std::cout << "[computeSfcMixDKeys] particleKeys[" << i << "] = " << std::oct << particleKeys[i] << std::dec
+        // << std::endl;
     }
 }
 
