@@ -119,7 +119,10 @@ HOST_DEVICE_FUN unsigned findNeighbors(LocalIndex i,
     // std::cout << "[findNeighbors] usePbc = " << usePbc << std::endl;
 
     auto overlapsPbc = [particle, cellRadiusSq, centers = tree.centers, sizes = tree.sizes, &box](TreeNodeIndex idx)
-    { return norm2(minDistance(particle, centers[idx], sizes[idx], box)) < cellRadiusSq; };
+    {
+        if (sizes[idx][0] == 0 || sizes[idx][1] == 0 || sizes[idx][2] == 0) { return false; }
+        return norm2(minDistance(particle, centers[idx], sizes[idx], box)) < cellRadiusSq;
+    };
 
     auto overlaps = [particle, cellRadiusSq, centers = tree.centers, sizes = tree.sizes](TreeNodeIndex idx)
     {
