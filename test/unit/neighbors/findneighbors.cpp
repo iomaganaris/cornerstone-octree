@@ -75,13 +75,13 @@ void neighborCheck(const Coordinates& coords, T radius, const Box<T>& box)
     std::vector<unsigned> neighborsCountProbe(n);
 
     auto sfcKeys = coords.particleKeys().data();
-    std::cout << "[neighborCheck] Particles and sfcKeys:\n";
-    for (size_t i = 0; i < n; ++i)
-    {
-        std::cout << "Particle " << i << ": (" << coords.x()[i] << ", " << coords.y()[i] << ", " << coords.z()[i]
-                  << ") ";
-        std::cout << "sfcKey: " << std::oct << sfcKeys[i] << std::dec << std::endl;
-    }
+    // std::cout << "[neighborCheck] Particles and sfcKeys:\n";
+    // for (size_t i = 0; i < n; ++i)
+    // {
+    //     std::cout << "Particle " << i << ": (" << coords.x()[i] << ", " << coords.y()[i] << ", " << coords.z()[i]
+    //               << ") ";
+    //     std::cout << "sfcKey: " << std::oct << sfcKeys[i] << std::dec << std::endl;
+    // }
 
     unsigned bucketSize   = 64;
     auto [csTree, counts] = computeOctree(sfcKeys, sfcKeys + n, bucketSize);
@@ -93,11 +93,14 @@ void neighborCheck(const Coordinates& coords, T radius, const Box<T>& box)
     std::exclusive_scan(counts.begin(), counts.end() + 1, layout.begin(), 0);
 
     gsl::span<const KeyType> nodeKeys(octree.prefixes.data(), octree.numNodes);
+    int number_of_non_zero_leaves{};
     std::cout << "nodeKeys3D\n";
-    for (size_t i = 0; i < nodeKeys.size(); ++i)
+    for (size_t i = 0; i < csTree.size(); ++i)
     {
-        std::cout << i << ": " << std::oct << nodeKeys[i] << std::dec << " count: " << counts[i] << std::endl;
+        if (counts[i] > 0) { number_of_non_zero_leaves++; }
+        std::cout << i << ": " << std::oct << csTree[i] << std::dec << " count: " << counts[i] << std::endl;
     }
+    std::cout << "number_of_non_zero_leaves = " << number_of_non_zero_leaves << std::endl;
     std::vector<Vec3<T>> centers(octree.numNodes), sizes(octree.numNodes);
     nodeFpCenters<KeyType>(nodeKeys, centers.data(), sizes.data(), box);
 
@@ -141,13 +144,13 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
     std::vector<unsigned> neighborsCountProbe(n);
 
     auto sfcKeys = coords.particleKeys().data();
-    std::cout << "[neighborCheckMixD] Particles and sfcKeys:\n";
-    for (size_t i = 0; i < n; ++i)
-    {
-        std::cout << "Particle " << i << ": (" << coords.x()[i] << ", " << coords.y()[i] << ", " << coords.z()[i]
-                  << ") ";
-        std::cout << "sfcKey: " << std::oct << sfcKeys[i] << std::dec << std::endl;
-    }
+    // std::cout << "[neighborCheckMixD] Particles and sfcKeys:\n";
+    // for (size_t i = 0; i < n; ++i)
+    // {
+    //     std::cout << "Particle " << i << ": (" << coords.x()[i] << ", " << coords.y()[i] << ", " << coords.z()[i]
+    //               << ") ";
+    //     std::cout << "sfcKey: " << std::oct << sfcKeys[i] << std::dec << std::endl;
+    // }
 
     unsigned bucketSize   = 64;
     auto [csTree, counts] = computeOctree(sfcKeys, sfcKeys + n, bucketSize);
@@ -159,11 +162,14 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
     std::exclusive_scan(counts.begin(), counts.end() + 1, layout.begin(), 0);
 
     gsl::span<const KeyType> nodeKeys(octree.prefixes.data(), octree.numNodes);
+    int number_of_non_zero_leaves{};
     std::cout << "nodeKeysMixD\n";
-    for (size_t i = 0; i < nodeKeys.size(); ++i)
+    for (size_t i = 0; i < csTree.size(); ++i)
     {
-        std::cout << i << ": " << std::oct << nodeKeys[i] << std::dec << " count: " << layout[i] << std::endl;
+        if (counts[i] > 0) { number_of_non_zero_leaves++; }
+        std::cout << i << ": " << std::oct << csTree[i] << std::dec << " count: " << counts[i] << std::endl;
     }
+    std::cout << "number_of_non_zero_leaves = " << number_of_non_zero_leaves << std::endl;
     std::vector<Vec3<T>> centers(octree.numNodes), sizes(octree.numNodes);
     nodeFpCenters<KeyType>(nodeKeys, centers.data(), sizes.data(), box, bx, by, bz);
 
