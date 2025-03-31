@@ -354,9 +354,9 @@ template<class KeyType, class T>
 constexpr HOST_DEVICE_FUN util::tuple<Vec3<T>, Vec3<T>>
 centerAndSize(const IBox& ibox, const Box<T>& box, unsigned bx, unsigned by, unsigned bz)
 {
-    constexpr int maxCoord = 1u << maxTreeLevel<KeyType>{};
+    // constexpr int maxCoord = 1u << maxTreeLevel<KeyType>{};
     // smallest octree cell edge length in unit cube
-    constexpr T uL = T(1.) / maxCoord;
+    // constexpr T uL = T(1.) / maxCoord;
 
     // std::cout << "ibox " << ibox.xmin() << " " << ibox.xmax() << " " << ibox.ymin() << " " << ibox.ymax() << " " <<
     // ibox.zmin() << " " << ibox.zmax() << std::endl; std::cout << "box " << box.xmin() << " " << box.xmax() << " " <<

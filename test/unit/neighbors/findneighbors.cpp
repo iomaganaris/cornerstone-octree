@@ -121,12 +121,12 @@ void neighborCheck(const Coordinates& coords, T radius, const Box<T>& box)
     std::cout << "layout.size() = " << layout.size() << std::endl;
     std::cout << "centers.size() = " << centers.size() << std::endl;
     std::cout << "sizes.size() = " << sizes.size() << std::endl;
-    for (size_t i{}; i < octree.prefixes.size(); ++i)
-    {
-        std::cout << "octree.prefixes[" << i << "] = " << std::oct << octree.prefixes[i] << std::dec << " center: ("
-                  << centers[i][0] << ", " << centers[i][1] << ", " << centers[i][2] << ") size: (" << sizes[i][0]
-                  << ", " << sizes[i][1] << ", " << sizes[i][2] << ")" << std::endl;
-    }
+    // for (size_t i{}; i < octree.prefixes.size(); ++i)
+    // {
+    //     std::cout << "octree.prefixes[" << i << "] = " << std::oct << octree.prefixes[i] << std::dec << " center: ("
+    //               << centers[i][0] << ", " << centers[i][1] << ", " << centers[i][2] << ") size: (" << sizes[i][0]
+    //               << ", " << sizes[i][1] << ", " << sizes[i][2] << ")" << std::endl;
+    // }
     findNeighbors(coords.x().data(), coords.y().data(), coords.z().data(), h.data(), 0, n, box, nsView, ngmax,
                   neighborsProbe.data(), neighborsCountProbe.data());
     sortNeighbors(neighborsProbe.data(), neighborsCountProbe.data(), n, ngmax);
@@ -232,10 +232,10 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
                   << centers[i][0] << ", " << centers[i][1] << ", " << centers[i][2] << ") size: (" << sizes[i][0]
                   << ", " << sizes[i][1] << ", " << sizes[i][2] << ")" << std::endl;
     }
-    for (size_t i{}; i < layout.size(); ++i)
-    {
-        std::cout << "layout[" << i << "] = " << layout[i] << std::endl;
-    }
+    // for (size_t i{}; i < layout.size(); ++i)
+    // {
+    //     std::cout << "layout[" << i << "] = " << layout[i] << std::endl;
+    // }
 
     findNeighbors(coords.x().data(), coords.y().data(), coords.z().data(), h.data(), 0, n, box, nsView, ngmax,
                   neighborsProbe.data(), neighborsCountProbe.data());
@@ -315,27 +315,76 @@ public:
     }
 };
 
+class CompareNeighborsRandomMixD
+    : public testing::TestWithParam<
+          std::tuple<double, int, std::pair<std::array<int, 3>, std::array<double, 6>>, cstone::BoundaryType>>
+{
+public:
+    template<class KeyType3D, class KeyTypeMixD, template<class...> class CoordinateKind>
+    void compare3DtoMixD()
+    {
+        double radius  = std::get<0>(GetParam());
+        int nParticles = std::get<1>(GetParam());
+        std::cout << "nParticles = " << nParticles << std::endl;
+        auto [bit_limits, box_limits] = std::get<2>(GetParam());
+        cstone::BoundaryType usePbc   = std::get<3>(GetParam());
+        Box<double> box{box_limits[0], box_limits[1], box_limits[2], box_limits[3], box_limits[4],
+                        box_limits[5], usePbc,        usePbc,        usePbc};
+
+        CoordinateKind<double, KeyType3D> coords3D(nParticles, box, 42);
+        CoordinateKind<double, KeyTypeMixD> coordsMixD(nParticles, box, 42, bit_limits[0], bit_limits[1],
+                                                       bit_limits[2]);
+
+        auto sfcKeys3D   = coords3D.particleKeys().data();
+        auto sfcKeysMixD = coordsMixD.particleKeys().data();
+
+        unsigned bucketSize           = 64;
+        auto [csTree3D, counts3D]     = computeOctree(sfcKeys3D, sfcKeys3D + nParticles, bucketSize);
+        auto [csTreeMixD, countsMixD] = computeOctree(sfcKeysMixD, sfcKeysMixD + nParticles, bucketSize);
+
+        int number_of_non_zero_leaves_3D{};
+        for (size_t i = 0; i < csTree3D.size(); ++i)
+        {
+            if (counts3D[i] > 0) { number_of_non_zero_leaves_3D++; }
+        }
+
+        int number_of_non_zero_leaves_MixD{};
+        for (size_t i = 0; i < csTreeMixD.size(); ++i)
+        {
+            if (countsMixD[i] > 0) { number_of_non_zero_leaves_MixD++; }
+        }
+        std::cout << "number_of_non_zero_leaves_3D = " << number_of_non_zero_leaves_3D << std::endl;
+        std::cout << "number_of_non_zero_leaves_MixD = " << number_of_non_zero_leaves_MixD << std::endl;
+        EXPECT_LE(number_of_non_zero_leaves_MixD, number_of_non_zero_leaves_3D);
+    }
+};
+
 TEST_P(FindNeighborsRandom, HilbertUniform32) { check<HilbertKey<uint32_t>, RandomCoordinates>(); }
 TEST_P(FindNeighborsRandom, HilbertUniform64) { check<HilbertKey<uint64_t>, RandomCoordinates>(); }
 TEST_P(FindNeighborsRandomMixD, HilbertMixDUniform32) { checkMixD<HilbertMixDKey<uint32_t>, RandomCoordinates>(); }
+TEST_P(CompareNeighborsRandomMixD, Hilbert3DMixDUniform32)
+{
+    compare3DtoMixD<HilbertKey<uint32_t>, HilbertMixDKey<uint32_t>, RandomCoordinates>();
+}
 TEST_P(FindNeighborsRandom, HilbertGaussian32) { check<HilbertKey<uint32_t>, RandomGaussianCoordinates>(); }
 TEST_P(FindNeighborsRandom, HilbertGaussian64) { check<HilbertKey<uint64_t>, RandomGaussianCoordinates>(); }
 
 std::array<double, 2> radii{0.124, 0.0624};
-std::array<int, 1> nParticles{1000};
+std::array<int, 1> nParticles{2500};
 std::array<std::array<double, 6>, 2> boxes{{{0., 1., 0., 1., 0., 1.}, {-1.2, 0.23, -0.213, 3.213, -5.1, 1.23}}};
+std::array<std::array<double, 6>, 2> boxesMixD{
+    {{0., 1., 0., 0.015625, 0., 0.00390625}, {0., 0.00390625, 0., 1., 0., 0.015625}}};
 std::array<double, 3> radiiMixD{0.001, 1., 0.01};
 std::array<std::pair<std::array<int, 3>, std::array<double, 6>>, 2> bits_boxes_MixD{
     std::make_pair(std::array<int, 3>{10, 4, 2}, std::array<double, 6>{0., 1., 0., 0.015625, 0., 0.00390625}),
     std::make_pair(std::array<int, 3>{2, 10, 4}, std::array<double, 6>{0., 0.00390625, 0., 1., 0., 0.015625})};
-// std::array<std::array<double, 6>, 1> boxesMixD_2_10_4{std::array<double, 6>{0., 0.00390625, 0., 1., 0., 0.015625}};
 std::array<cstone::BoundaryType, 2> pbcUsage{BoundaryType::open, BoundaryType::periodic};
 
 INSTANTIATE_TEST_SUITE_P(RandomNeighbors,
                          FindNeighborsRandom,
                          testing::Combine(testing::ValuesIn(radiiMixD),
                                           testing::ValuesIn(nParticles),
-                                          testing::ValuesIn(boxes),
+                                          testing::ValuesIn(boxesMixD),
                                           testing::ValuesIn(pbcUsage)));
 
 INSTANTIATE_TEST_SUITE_P(RandomNeighborsMixD,
@@ -345,9 +394,16 @@ INSTANTIATE_TEST_SUITE_P(RandomNeighborsMixD,
                                           testing::ValuesIn(bits_boxes_MixD),
                                           testing::ValuesIn(pbcUsage)));
 
-// INSTANTIATE_TEST_SUITE_P(RandomNeighborsLargeRadius,
-//                          FindNeighborsRandom,
-//                          testing::Combine(testing::Values(3.0),
-//                                           testing::Values(500),
-//                                           testing::ValuesIn(boxes),
-//                                           testing::ValuesIn(pbcUsage)));
+INSTANTIATE_TEST_SUITE_P(CompareRandomNeighbors3DMixD,
+                         CompareNeighborsRandomMixD,
+                         testing::Combine(testing::ValuesIn(radiiMixD),
+                                          testing::ValuesIn(nParticles),
+                                          testing::ValuesIn(bits_boxes_MixD),
+                                          testing::ValuesIn(pbcUsage)));
+
+INSTANTIATE_TEST_SUITE_P(RandomNeighborsLargeRadius,
+                         FindNeighborsRandom,
+                         testing::Combine(testing::Values(3.0),
+                                          testing::Values(500),
+                                          testing::ValuesIn(boxes),
+                                          testing::ValuesIn(pbcUsage)));
