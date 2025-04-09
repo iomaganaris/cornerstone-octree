@@ -25,7 +25,8 @@
 
 #pragma once
 
-#include <cstdint>
+#include <cassert>
+#include <type_traits>
 #include "cstone/cuda/annotation.hpp"
 
 #include "cstone/primitives/stl.hpp"
@@ -79,6 +80,14 @@ struct maxTreeLevel<unsigned long long> : stl::integral_constant<unsigned, 21>
 template<>
 struct maxTreeLevel<unsigned long> : stl::integral_constant<unsigned, 21>
 {
+};
+
+//! @brief A special key value that cannot result from valid coordinates. Used to flag particles for removal.
+template<class KeyType>
+struct removeKey
+{
+    static constexpr KeyType value = KeyType(1ul << (3 * maxTreeLevel<KeyType>{}));
+    HOST_DEVICE_FUN constexpr operator KeyType() const noexcept { return value; }
 };
 
 //! @brief maximum integer coordinate

@@ -44,9 +44,10 @@
 
 #include "cstone/cuda/annotation.hpp"
 #include "cstone/cuda/cuda_utils.hpp"
+#include "cstone/cuda/device_vector.h"
 #include "cstone/primitives/gather.hpp"
 #include "cstone/sfc/sfc.hpp"
-#include "cstone/tree/accel_switch.hpp"
+#include "cstone/primitives/accel_switch.hpp"
 #include "cstone/tree/csarray.hpp"
 #include "cstone/util/gsl-lite.hpp"
 
@@ -320,8 +321,7 @@ class OctreeData
 {
     //! @brief A vector template that resides on the hardware specified as Accelerator
     template<class ValueType>
-    using AccVector =
-        typename AccelSwitchType<Accelerator, std::vector, thrust::device_vector>::template type<ValueType>;
+    using AccVector = typename AccelSwitchType<Accelerator, std::vector, DeviceVector>::template type<ValueType>;
 
 public:
     void resize(TreeNodeIndex numCsLeafNodes)
@@ -613,6 +613,7 @@ struct SumCombination
 template<class CountType>
 struct NodeCount
 {
+    HOST_DEVICE_FUN
     CountType operator()(TreeNodeIndex /*nodeIdx*/, TreeNodeIndex c, const CountType* Q)
     {
         uint64_t sum = Q[c];
@@ -620,7 +621,7 @@ struct NodeCount
         {
             sum += Q[c + octant];
         }
-        return stl::min(uint64_t(std::numeric_limits<CountType>::max()), sum);
+        return stl::min(uint64_t(0xFFFFFFFF), sum);
     }
 };
 

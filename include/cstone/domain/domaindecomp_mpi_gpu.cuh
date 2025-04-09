@@ -152,7 +152,7 @@ void exchangeParticlesGpu(int epoch,
         if (record) { receiveLog.addExchange(receiveRank, receiveStart); }
         else { receiveLocation = receiveLog.lookup(receiveRank); }
 
-        auto packTuple     = packBufferPtrs<alignment>(receiveBuffer, receiveCount, (arrays + receiveLocation)...);
+        auto packTuple = util::packBufferPtrs<alignment>(receiveBuffer, receiveCount, (arrays + receiveLocation)...);
         auto scatterRanges = [receiveCount](auto arrayPair)
         {
             checkGpuErrors(cudaMemcpy(arrayPair[0], arrayPair[1],
@@ -171,8 +171,8 @@ void exchangeParticlesGpu(int epoch,
         MPI_Waitall(int(sendRequests.size()), sendRequests.data(), status);
     }
 
-    reallocateDevice(sendScratchBuffer, oldSendSize, 1.01);
-    reallocateDevice(receiveScratchBuffer, oldRecvSize, 1.01);
+    reallocate(sendScratchBuffer, oldSendSize, 1.01);
+    reallocate(receiveScratchBuffer, oldRecvSize, 1.01);
 
     // If this process is going to send messages with rank/tag combinations
     // already sent in this function, this can lead to messages being mixed up

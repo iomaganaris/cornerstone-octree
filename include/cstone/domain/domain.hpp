@@ -44,9 +44,10 @@
 #include "cstone/focus/octree_focus_mpi.hpp"
 #include "cstone/halos/halos.hpp"
 #include "cstone/primitives/gather.hpp"
+#include "cstone/primitives/primitives_acc.hpp"
 #include "cstone/traversal/collisions.hpp"
 #include "cstone/traversal/peers.hpp"
-#include "cstone/tree/accel_switch.hpp"
+#include "cstone/primitives/accel_switch.hpp"
 #include "cstone/sfc/box_mpi.hpp"
 #include "cstone/sfc/sfc.hpp"
 #include "cstone/sfc/sfc_gpu.h"
@@ -69,8 +70,7 @@ class Domain
 
     //! @brief A vector template that resides on the hardware specified as Accelerator
     template<class ValueType>
-    using AccVector =
-        typename AccelSwitchType<Accelerator, std::vector, thrust::device_vector>::template type<ValueType>;
+    using AccVector = typename AccelSwitchType<Accelerator, std::vector, DeviceVector>::template type<ValueType>;
 
     template<class BufferType>
     using ReorderFunctor_t =
@@ -222,10 +222,9 @@ public:
             focusTree_.converge(box(), keyView, peers, global_.assignment(), global_.treeLeaves(), global_.nodeCounts(),
                                 invThetaEff, std::get<0>(scratch));
         }
-        focusTree_.updateMinMac(box(), global_.assignment(), invThetaEff);
+        focusTree_.updateMinMac(global_.assignment(), invThetaEff);
         focusTree_.updateTree(peers, global_.assignment(), box());
         focusTree_.updateCounts(keyView, global_.treeLeaves(), global_.nodeCounts(), std::get<0>(scratch));
-        focusTree_.updateGeoCenters(box());
 
         auto octreeView            = focusTree_.octreeViewAcc();
         const KeyType* focusLeaves = focusTree_.treeLeavesAcc().data();
@@ -272,15 +271,15 @@ public:
             // first rough convergence to avoid computing expansion centers of large nodes with a lot of particles
             focusTree_.converge(box(), keyView, peers, global_.assignment(), global_.treeLeaves(), global_.nodeCounts(),
                                 1.0, std::get<0>(scratch));
-            focusTree_.updateMinMac(box(), global_.assignment(), 1.0);
+            focusTree_.updateMinMac(global_.assignment(), 1.0);
             int converged = 0, reps = 0;
             while (converged != numRanks_ || reps < 2)
             {
                 converged = focusTree_.updateTree(peers, global_.assignment(), box());
                 focusTree_.updateCounts(keyView, global_.treeLeaves(), global_.nodeCounts(), std::get<0>(scratch));
-                focusTree_.updateCenters(rawPtr(x), rawPtr(y), rawPtr(z), rawPtr(m), global_.octree(), box(),
+                focusTree_.updateCenters(rawPtr(x), rawPtr(y), rawPtr(z), rawPtr(m), global_.octree(),
                                          std::get<0>(scratch), std::get<1>(scratch));
-                focusTree_.updateMacs(box(), global_.assignment(), 1.0 / theta_);
+                focusTree_.updateMacs(global_.assignment(), 1.0 / theta_);
                 MPI_Allreduce(MPI_IN_PLACE, &converged, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
                 reps++;
             }
@@ -289,13 +288,12 @@ public:
         int fail = 0;
         do
         {
-            focusTree_.updateMacs(box(), global_.assignment(), centerDriftTol_ / theta_);
+            focusTree_.updateMacs(global_.assignment(), centerDriftTol_ / theta_);
             focusTree_.updateTree(peers, global_.assignment(), box());
             focusTree_.updateCounts(keyView, global_.treeLeaves(), global_.nodeCounts(), std::get<0>(scratch));
-            focusTree_.updateCenters(rawPtr(x), rawPtr(y), rawPtr(z), rawPtr(m), global_.octree(), box(),
-                                     std::get<0>(scratch), std::get<1>(scratch));
-            focusTree_.updateMacs(box(), global_.assignment(), 1.0 / theta_);
-            focusTree_.updateGeoCenters(box());
+            focusTree_.updateCenters(rawPtr(x), rawPtr(y), rawPtr(z), rawPtr(m), global_.octree(), std::get<0>(scratch),
+                                     std::get<1>(scratch));
+            focusTree_.updateMacs(global_.assignment(), 1.0 / theta_);
 
             auto octreeView            = focusTree_.octreeViewAcc();
             const KeyType* focusLeaves = focusTree_.treeLeavesAcc().data();
@@ -419,9 +417,9 @@ public:
     void updateExpansionCenters(VectorX& x, VectorX& y, VectorX& z, VectorM& m, VectorS1& s1, VectorS2& s2)
     {
         auto si = startIndex();
-        focusTree_.updateCenters(rawPtr(x) + si, rawPtr(y) + si, rawPtr(z) + si, rawPtr(m) + si, global_.octree(),
-                                 box(), s1, s2);
-        focusTree_.setMacRadius(box(), 1.0 / theta_);
+        focusTree_.updateCenters(rawPtr(x) + si, rawPtr(y) + si, rawPtr(z) + si, rawPtr(m) + si, global_.octree(), s1,
+                                 s2);
+        focusTree_.setMacRadius(1.0 / theta_);
     };
 
     OctreeNsView<T, KeyType> octreeProperties() const
@@ -509,6 +507,9 @@ private:
                                            rawPtr(keys), rawPtr(x), rawPtr(y), rawPtr(z));
         lowMemReallocate(exchangeSize, allocGrowthRate_, distributedArrays, scratchBuffers);
 
+        // Must zero new memory to exclude possibility of special value (removeKey) in uninitialized memory
+        fill<IsDeviceVector<KeyVec>{}>(rawPtr(keys) + bufDesc_.size, rawPtr(keys) + exchangeSize, KeyType(0));
+
         return std::apply(
             [exchangeSize, &sorter, &scratchBuffers, this](auto&... arrays)
             {
@@ -562,7 +563,8 @@ private:
 
             auto* swapPtr = reinterpret_cast<KeyType*>(rawPtr(swapSpace));
             memcpyD2D(keyView.data(), keyView.size(), swapPtr);
-            reallocateDestructive(keys, newBufDesc.size, allocGrowthRate_);
+            reallocate(keys, newBufDesc.size, allocGrowthRate_);
+            fill<true>(rawPtr(keys) + bufDesc_.size, rawPtr(keys) + newBufDesc.size, KeyType(0));
             memcpyD2D(swapPtr, keyView.size(), rawPtr(keys) + newBufDesc.start);
 
             reallocate(swapSpace, origSize, 1.0);
@@ -571,6 +573,7 @@ private:
         {
             omp_copy(layout_.begin(), layout_.end(), layoutAcc_.begin());
             reallocate(swapKeys_, newBufDesc.size, allocGrowthRate_);
+            fill<false>(rawPtr(swapKeys_) + bufDesc_.size, rawPtr(swapKeys_) + newBufDesc.size, KeyType(0));
             omp_copy(keyView.begin(), keyView.end(), swapKeys_.begin() + newBufDesc.start);
             swap(keys, swapKeys_);
         }
