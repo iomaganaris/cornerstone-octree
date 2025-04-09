@@ -420,7 +420,7 @@ void computeSfcMixDKeys(const T* x,
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i)
     {
-        if (particleKeys[i] != removeKey<KeyType>::value)
+        if (particleKeys[i] != removeKey<typename KeyType::ValueType>::value)
         {
             particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box, bx, by, bz);
         }
