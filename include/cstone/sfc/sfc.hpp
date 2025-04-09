@@ -111,11 +111,21 @@ struct unusedBits<HilbertKey<unsigned>> : stl::integral_constant<unsigned, 2>
 };
 
 template<>
+struct unusedBits<HilbertMixDKey<unsigned>> : stl::integral_constant<unsigned, 2>
+{
+};
+
+template<>
 struct unusedBits<MortonKey<unsigned long>> : stl::integral_constant<unsigned, 1>
 {
 };
 template<>
 struct unusedBits<HilbertKey<unsigned long>> : stl::integral_constant<unsigned, 1>
+{
+};
+
+template<>
+struct unusedBits<HilbertMixDKey<unsigned long>> : stl::integral_constant<unsigned, 1>
 {
 };
 
@@ -129,11 +139,21 @@ struct unusedBits<HilbertKey<unsigned long long>> : stl::integral_constant<unsig
 };
 
 template<>
+struct unusedBits<HilbertMixDKey<unsigned long long>> : stl::integral_constant<unsigned, 1>
+{
+};
+
+template<>
 struct maxTreeLevel<MortonKey<unsigned>> : stl::integral_constant<unsigned, 10>
 {
 };
 template<>
 struct maxTreeLevel<HilbertKey<unsigned>> : stl::integral_constant<unsigned, 10>
+{
+};
+
+template<>
+struct maxTreeLevel<HilbertMixDKey<unsigned>> : stl::integral_constant<unsigned, 10>
 {
 };
 
@@ -147,11 +167,21 @@ struct maxTreeLevel<HilbertKey<unsigned long>> : stl::integral_constant<unsigned
 };
 
 template<>
+struct maxTreeLevel<HilbertMixDKey<unsigned long>> : stl::integral_constant<unsigned, 21>
+{
+};
+
+template<>
 struct maxTreeLevel<MortonKey<unsigned long long>> : stl::integral_constant<unsigned, 21>
 {
 };
 template<>
 struct maxTreeLevel<HilbertKey<unsigned long long>> : stl::integral_constant<unsigned, 21>
+{
+};
+
+template<>
+struct maxTreeLevel<HilbertMixDKey<unsigned long long>> : stl::integral_constant<unsigned, 21>
 {
 };
 
@@ -417,10 +447,13 @@ void computeSfcMixDKeys(const T* x,
                         unsigned by,
                         unsigned bz)
 {
+    std::cout << "[computeSfcMixDKeys] KeyType: " << debug::print_type<KeyType>("") << std::endl;
+    std::cout << "[computeSfcMixDKeys] box = " << box.xmin() << " " << box.xmax() << " " << box.ymin() << " " << box.ymax() << " "
+              << box.zmin() << " " << box.zmax() << std::endl;
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i)
     {
-        if (particleKeys[i] != removeKey<typename KeyType::ValueType>::value)
+        if (particleKeys[i] != removeKey<KeyType>::value)
         {
             particleKeys[i] = sfcMixD<KeyType>(x[i], y[i], z[i], box, bx, by, bz);
         }
