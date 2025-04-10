@@ -329,7 +329,7 @@ decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
     std::sort(permutation.begin(), permutation.end(), [&bits](int i, int j) { return bits[i] > bits[j]; });
     std::sort(bits.begin(), bits.end(), std::greater<unsigned>{});
 
-    std::array<unsigned, 3> coordinates{0, 0, 0};
+    std::array<KeyType, 3> coordinates{0, 0, 0};
 
     if (bits[0] > bits[1]) // 1 dim has more bits than the other 2 dims, add 1D levels
     {
@@ -337,9 +337,9 @@ decodeHilbertMixD(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
         for (int i{0}; i < n; ++i)
         {
             const auto processes_coordinate_bit_index = bits[0] - 1 - i;
-            coordinates[0] |= ((key >> (3 * processes_coordinate_bit_index)) & 1) << processes_coordinate_bit_index;
+            coordinates[0] |= ((key >> (3 * processes_coordinate_bit_index)) & static_cast<KeyType>(1)) << processes_coordinate_bit_index;
         }
-        key &= (1u << (3 * bits[1])) - 1;
+        key &= (static_cast<KeyType>(1) << (3 * bits[1])) - 1;
     }
     if (bits[1] > bits[2]) // 2 dims have more bits than the 3rd, add 2D levels
     {
@@ -463,6 +463,22 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
 template<class KeyType>
 HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned bx, unsigned by, unsigned bz) noexcept
 {
+    // if constexpr (std::is_same_v<KeyType, unsigned>)
+    // {
+    //     std::cout << "[hilbertMixDIBox] KeyType is unsigned" << std::endl;
+    // } else if constexpr (std::is_same_v<KeyType, unsigned long>)
+    // {
+    //     std::cout << "[hilbertMixDIBox] KeyType is unsigned long" << std::endl;
+    // } else if constexpr (std::is_same_v<KeyType, unsigned long long>)
+    // {
+    //     std::cout << "[hilbertMixDIBox] KeyType is unsigned long long" << std::endl;
+    // } else
+    // {
+    //     static_assert(std::is_same_v<KeyType, unsigned>, "KeyType must be unsigned");
+    // }
+    // std::cout << "[hilbertMixDIBox] keyStart (octal): " << std::oct << keyStart << std::dec << std::endl;
+    // std::cout << "[hilbertMixDIBox] level: " << level << std::endl;
+    // std::cout << "[hilbertMixDIBox] bx: " << bx << " by: " << by << " bz: " << bz << std::endl;
     assert(level <= maxTreeLevel<KeyType>{});
     unsigned cubeLengthX = 1u << std::min(bx, level);
     unsigned cubeLengthY = 1u << std::min(by, level);
@@ -470,7 +486,7 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned 
     unsigned maskX       = ~(cubeLengthX - 1);
     unsigned maskY       = ~(cubeLengthY - 1);
     unsigned maskZ       = ~(cubeLengthZ - 1);
-    auto [ix, iy, iz]    = decodeHilbertMixD(keyStart, bx, by, bz);
+    auto [ix, iy, iz]    = decodeHilbertMixD<KeyType>(keyStart, bx, by, bz);
     // std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
     //   << std::endl;
     // std::cout << "cubeLength: " << cubeLength << std::endl;
