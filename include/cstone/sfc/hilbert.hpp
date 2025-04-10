@@ -145,8 +145,8 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
     std::array<unsigned, 3> bits{bx, by, bz};
     std::array<int, 3> permutation{0, 1, 2};
     std::sort(permutation.begin(), permutation.end(), [&bits](int i, int j) { return bits[i] > bits[j]; });
-    std::array<unsigned, 3> coordinates{px, py, pz};
-    std::array<unsigned, 3> sorted_coordinates{coordinates[permutation[0]], coordinates[permutation[1]],
+    std::array<KeyType, 3> coordinates{px, py, pz};
+    std::array<KeyType, 3> sorted_coordinates{coordinates[permutation[0]], coordinates[permutation[1]],
                                                coordinates[permutation[2]]};
     std::sort(bits.begin(), bits.end(), std::greater<unsigned>{});
 
@@ -160,7 +160,7 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
             key |= ((sorted_coordinates[0] >> processes_bit_index) & 1) << (3 * processes_bit_index);
             // IM: Should it be 00? for x, 0?0 for y and ?00 for z?
         }
-        const unsigned mask = (1u << bits[1]) - 1;
+        const KeyType mask = (static_cast<KeyType>(1) << bits[1]) - 1;
         sorted_coordinates[0] &= mask;
         bits[0] -= n;
         // now we have bits[0] == bits[1]
@@ -183,7 +183,7 @@ iHilbertMixD(unsigned px, unsigned py, unsigned pz, unsigned bx, unsigned by, un
             key |= ((key_2D >> (2 * processes_2D_key_bit_index)) & 3) << (3 * processes_coordinate_bit_index);
         }
         // remove n bits from sorted_coordinates[0] and sorted_coordinates[1]
-        const unsigned mask = (1u << bits[2]) - 1;
+        const KeyType mask = (1u << bits[2]) - 1;
         sorted_coordinates[0] &= mask;
         sorted_coordinates[1] &= mask;
         bits[0] -= n;
