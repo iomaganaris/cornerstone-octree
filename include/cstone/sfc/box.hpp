@@ -478,7 +478,7 @@ AxisMixDBits getBoxMixDimensionBits(const Box<T>& box) {
         else if (i == 1) bit_limits.by = bits;
         else if (i == 2) bit_limits.bz = bits;
     }
-    std::cout << "[getBoxMixDimensionBits] bit_limits: " << bit_limits.bx << ", " << bit_limits.by << ", " << bit_limits.bz << std::endl;
+    // std::cout << "[getBoxMixDimensionBits] bit_limits: " << bit_limits.bx << ", " << bit_limits.by << ", " << bit_limits.bz << std::endl;
     return bit_limits;
 }
 
