@@ -447,9 +447,8 @@ void computeSfcMixDKeys(const T* x,
                         unsigned by,
                         unsigned bz)
 {
-    std::cout << "[computeSfcMixDKeys] KeyType: " << debug::print_type<KeyType>("") << std::endl;
-    std::cout << "[computeSfcMixDKeys] box = " << box.xmin() << " " << box.xmax() << " " << box.ymin() << " " << box.ymax() << " "
-              << box.zmin() << " " << box.zmax() << std::endl;
+    // std::cout << "[computeSfcMixDKeys] box = " << box.xmin() << " " << box.xmax() << " " << box.ymin() << " " << box.ymax() << " "
+    //           << box.zmin() << " " << box.zmax() << std::endl;
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i)
     {

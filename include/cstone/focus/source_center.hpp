@@ -176,12 +176,12 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
         unsigned level              = decodePrefixLength(prefix) / 3;
         unsigned level_key          = octalDigit(startKey, level);
         const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
-        std::cout << "[nodeFpCentersMixD] prefix: " << std::oct << prefix << std::dec << std::endl;
-        std::cout << "[nodeFpCentersMixD] startKey: " << startKey << " oct: " << std::oct << startKey << std::dec
-                  << std::endl;
-        std::cout << "[nodeFpCentersMixD] level: " << level << std::endl;
-        std::cout << "[nodeFpCentersMixD] level_from_right: " << level_from_right << std::endl;
-        std::cout << "[nodeFpCentersMixD] level_key: " << level_key << std::endl;
+        // std::cout << "[nodeFpCentersMixD] prefix: " << std::oct << prefix << std::dec << std::endl;
+        // std::cout << "[nodeFpCentersMixD] startKey: " << startKey << " oct: " << std::oct << startKey << std::dec
+        //           << std::endl;
+        // std::cout << "[nodeFpCentersMixD] level: " << level << std::endl;
+        // std::cout << "[nodeFpCentersMixD] level_from_right: " << level_from_right << std::endl;
+        // std::cout << "[nodeFpCentersMixD] level_key: " << level_key << std::endl;
         // auto nodeBox = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right, bx, by, bz);
 
         // util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, bx, by, bz);
@@ -206,14 +206,14 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
         }
         auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, bx, by, bz);
         util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, bx, by, bz);
-        std::cout << "[nodeFpCentersMixD] nodeBox: (" << nodeBox.xmin() << ", " << nodeBox.xmax() << ", "
-                  << nodeBox.ymin() << ", " << nodeBox.ymax() << ", " << nodeBox.zmin() << ", " << nodeBox.zmax() << ")"
-                  << std::endl;
-        std::cout << "[nodeFpCentersMixD] box: (" << box.xmin() << ", " << box.xmax() << ", " << box.ymin() << ", "
-                  << box.ymax() << ", " << box.zmin() << ", " << box.zmax() << ")" << std::endl;
-        std::cout << "[nodeFpCentersMixD] i: " << i << " Center: " << centers[i][0] << ", " << centers[i][1] << ", "
-                  << centers[i][2] << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2]
-                  << std::endl;
+        // std::cout << "[nodeFpCentersMixD] nodeBox: (" << nodeBox.xmin() << ", " << nodeBox.xmax() << ", "
+        //           << nodeBox.ymin() << ", " << nodeBox.ymax() << ", " << nodeBox.zmin() << ", " << nodeBox.zmax() << ")"
+        //           << std::endl;
+        // std::cout << "[nodeFpCentersMixD] box: (" << box.xmin() << ", " << box.xmax() << ", " << box.ymin() << ", "
+        //           << box.ymax() << ", " << box.zmin() << ", " << box.zmax() << ")" << std::endl;
+        // std::cout << "[nodeFpCentersMixD] i: " << i << " Center: " << centers[i][0] << ", " << centers[i][1] << ", "
+        //           << centers[i][2] << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2]
+        //           << std::endl;
     }
 }
 
