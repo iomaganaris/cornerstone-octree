@@ -85,10 +85,18 @@ public:
         gsl::span<KeyType> keyView(particleKeys + bufDesc.start, numParticles);
 
         #ifdef CSTONE_MIXD
-        // std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
-        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
-        computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
-                           numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        if constexpr (std::is_same_v<KeyType, SfcMixDKind<T>>) {
+            std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
+            const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
+            std::cout << "[GlobalAssignment][assign] mixDBits.bx: " << mixDBits.bx << " mixDBits.by: " << mixDBits.by
+                    << " mixDBits.bz: " << mixDBits.bz << std::endl;
+            computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
+                            numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        } else {
+            std::cout << "[GlobalAssignment][assign] computeSfcKeys" << std::endl;
+            computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
+                           numParticles, box_);
+        }
         #else
         // std::cout << "[GlobalAssignment][assign] computeSfcKeys" << std::endl;
         computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
