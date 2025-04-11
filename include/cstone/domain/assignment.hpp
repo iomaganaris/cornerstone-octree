@@ -85,7 +85,7 @@ public:
         gsl::span<KeyType> keyView(particleKeys + bufDesc.start, numParticles);
 
         #ifdef CSTONE_MIXD
-        // std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
+        std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
         const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
         computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
                            numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
@@ -156,7 +156,15 @@ public:
         auto recvStart = domain_exchange::receiveStart(bufDesc, numPresent(), numAssigned());
         auto numRecv   = numAssigned() - numPresent();
 
+        #ifdef CSTONE_MIXD
+        std::cout << "[GlobalAssignment][distribute] computeSfcMixDKeys" << std::endl;
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
+        computeSfcMixDKeys(x + recvStart, y + recvStart, z + recvStart, SfcMixDKindPointer(keys + recvStart),
+                           numRecv, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        #else
+        std::cout << "[GlobalAssignment][distribute] computeSfcKeys" << std::endl;
         computeSfcKeys(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv, box_);
+        #endif
         std::make_signed_t<LocalIndex> shifts = -numRecv;
         if (newEnd > bufDesc.end) { shifts = numRecv; }
         reorderFunctor.extendMap(shifts, s1);

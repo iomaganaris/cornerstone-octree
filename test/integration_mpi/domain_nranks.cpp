@@ -274,7 +274,11 @@ TEST(FocusDomain, removeParticle)
     unsigned bucketSizeFocus       = 8;
     float theta                    = 0.5;
 
+    #ifdef CSTONE_MIXD
+    RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
+    #else
     RandomCoordinates<Real, SfcKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
+    #endif
 
     std::vector<Real> x(coordinates.x().begin(), coordinates.x().end());
     std::vector<Real> y(coordinates.y().begin(), coordinates.y().end());
