@@ -32,6 +32,8 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <iostream>
 #include <cassert>
 #include <cmath>
 
@@ -453,6 +455,31 @@ Box<T> limitBoxShrinking(const Box<T>& fittingBox, const Box<T>& previousBox, co
                   previousBox.boundaryX(),
                   previousBox.boundaryY(),
                   previousBox.boundaryZ()};
+}
+
+struct AxisMixDBits
+{
+    int bx = 0;
+    int by = 0;
+    int bz = 0;
+};
+
+template <typename T, typename KeyType>
+AxisMixDBits getBoxMixDimensionBits(const Box<T>& box) {
+    const std::array<double, 3> boxDimensions{box.xmax() - box.xmin(), box.ymax() - box.ymin(),
+        box.zmax() - box.zmin()};
+    const auto max_dim_index = std::max_element(boxDimensions.begin(), boxDimensions.end()) - boxDimensions.begin();
+    const auto max_dim_value = boxDimensions[max_dim_index];
+    AxisMixDBits bit_limits;
+
+    for (int i = 0; i < 3; ++i) {
+        const auto bits = i == max_dim_index ? maxTreeLevel<KeyType>{} : maxTreeLevel<KeyType>{} - static_cast<int>(std::ceil(std::log2(max_dim_value / boxDimensions[i])));
+        if (i == 0) bit_limits.bx = bits;
+        else if (i == 1) bit_limits.by = bits;
+        else if (i == 2) bit_limits.bz = bits;
+    }
+    std::cout << "[getBoxMixDimensionBits] bit_limits: " << bit_limits.bx << ", " << bit_limits.by << ", " << bit_limits.bz << std::endl;
+    return bit_limits;
 }
 
 } // namespace cstone

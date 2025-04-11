@@ -621,7 +621,13 @@ private:
             computeGeoCentersGpu(rawPtr(octreeAcc_.prefixes), treeData_.numNodes, rawPtr(geoCentersAcc_),
                                  rawPtr(geoSizesAcc_), box_);
         }
-        else { nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_); }
+        else {
+            std::cout << "[updateGeoCenters] box = " << box_.xmin() << " " << box_.xmax() << " " << box_.ymin() << " " << box_.ymax() << " "
+              << box_.zmin() << " " << box_.zmax() << std::endl;
+            const auto mixDBits = getBoxMixDimensionBits<RealType, KeyType>(box_);
+            nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_, mixDBits.bx,
+                                   mixDBits.by, mixDBits.bz);
+        }
     }
 
     void uploadOctree()

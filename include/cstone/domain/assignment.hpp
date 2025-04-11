@@ -83,8 +83,14 @@ public:
 
         // compute SFC particle keys only for particles participating in tree build
         gsl::span<KeyType> keyView(particleKeys + bufDesc.start, numParticles);
-        computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
-                       numParticles, box_);
+        // std::cout << "[GlobalAssignment][assign] computeSfcKeys" << std::endl;
+        // computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
+        //                numParticles, box_);
+
+        std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
+        computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
+                           numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
 
         // sort keys and keep track of ordering for later use
         reorderFunctor.setMapFromCodes(keyView.begin(), keyView.end());
