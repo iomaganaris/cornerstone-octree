@@ -357,7 +357,13 @@ void multiStepSync(int rank, int numRanks)
 
     // keys correspond to particles and are SFC sorted
     std::vector<KeyType> keysChk(domain.nParticlesWithHalos());
+    #ifdef CSTONE_MIXD
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(domain.box());
+    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(keysChk.data()), x.size(), domain.box(), mixDBits.bx,
+                       mixDBits.by, mixDBits.bz);
+    #else
     computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(keysChk.data()), x.size(), domain.box());
+    #endif
     EXPECT_EQ(keys, keysChk);
     EXPECT_TRUE(std::is_sorted(keys.begin(), keys.end()));
 
@@ -375,9 +381,16 @@ void multiStepSync(int rank, int numRanks)
     MPI_Allreduce(MPI_IN_PLACE, keyGlobal.data(), keyGlobal.size(), MpiType<KeyType>{}, MPI_SUM, MPI_COMM_WORLD);
 
     std::vector<KeyType> keyGlobRef(xGlobal.size());
+    #ifdef CSTONE_MIXD
+    computeSfcMixDKeys(xGlobal.data(), yGlobal.data(), zGlobal.data(), SfcMixDKindPointer(keyGlobRef.data()), xGlobal.size(),
+                   domain.box(), mixDBits.bx, mixDBits.by, mixDBits.bz);
+    keyGlobRef[1] = sfcMixD<SfcMixDKind<KeyType>>(newPart[0], newPart[1], newPart[2], domain.box(), mixDBits.bx, mixDBits.by,
+                                              mixDBits.bz);
+    #else
     computeSfcKeys(xGlobal.data(), yGlobal.data(), zGlobal.data(), sfcKindPointer(keyGlobRef.data()), xGlobal.size(),
                    domain.box());
     keyGlobRef[1] = sfc3D<SfcKind<KeyType>>(newPart[0], newPart[1], newPart[2], domain.box());
+    #endif
     sort(begin(keyGlobRef), end(keyGlobRef));
     EXPECT_EQ(keyGlobal, keyGlobRef);
 }

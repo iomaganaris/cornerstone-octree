@@ -121,7 +121,14 @@ void randomGaussianDomain(DomainType domain, int rank, int nRanks, bool equalize
     // box got updated if not using PBC
     box = domain.box();
     std::vector<KeyType> keysRef(x.size());
+    #ifdef CSTONE_MIXD
+    std::cout << "[randomGaussianDomain] MixD keys" << std::endl;
+    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(keysRef.data()), x.size(), box, mixDBits.bx,
+                       mixDBits.by, mixDBits.bz);
+    #else
     computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(keysRef.data()), x.size(), box);
+    #endif
 
     // check that particles are SFC order sorted and the keys are in sync with the x,y,z arrays
     EXPECT_EQ(keys, keysRef);
@@ -223,7 +230,13 @@ TEST(FocusDomain, assignmentShift)
     unsigned bucketSizeFocus       = 8;
     float theta                    = 0.5;
 
+    #ifdef CSTONE_MIXD
+    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+    RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
+                                                              mixDBits.bz);
+    #else
     RandomCoordinates<Real, SfcKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
+    #endif
 
     std::vector<Real> x(coordinates.x().begin(), coordinates.x().end());
     std::vector<Real> y(coordinates.y().begin(), coordinates.y().end());
@@ -333,7 +346,13 @@ TEST(FocusDomain, reapplySync)
     float theta                    = 0.5;
 
     // Note: rank used as seed, so each rank will get different coordinates
+    #ifdef CSTONE_MIXD
+    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+    RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
+                                                              mixDBits.bz);
+    #else
     RandomCoordinates<Real, SfcKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
+    #endif
 
     std::vector<Real> x(coordinates.x().begin(), coordinates.x().end());
     std::vector<Real> y(coordinates.y().begin(), coordinates.y().end());
@@ -348,7 +367,13 @@ TEST(FocusDomain, reapplySync)
 
     // modify coordinates
     {
+        #ifdef CSTONE_MIXD
+        const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+        RandomCoordinates<Real, SfcMixDKind<KeyType>> scord(domain.nParticles(), box, numRanks + rank, mixDBits.bx,
+                                                            mixDBits.by, mixDBits.bz);
+        #else
         RandomCoordinates<Real, SfcKind<KeyType>> scord(domain.nParticles(), box, numRanks + rank);
+        #endif
         std::copy(scord.x().begin(), scord.x().end(), x.begin() + domain.startIndex());
         std::copy(scord.y().begin(), scord.y().end(), y.begin() + domain.startIndex());
         std::copy(scord.z().begin(), scord.z().end(), z.begin() + domain.startIndex());
