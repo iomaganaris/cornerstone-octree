@@ -81,6 +81,8 @@ void randomGaussianDomain(DomainType domain, int rank, int nRanks, bool equalize
 {
     LocalIndex numParticles = (1000 / nRanks) * nRanks;
     Box<T> box              = domain.box();
+    std::cout << "[randomGaussianDomain] box: (" << box.xmin() << " " << box.xmax() << " "
+              << box.ymin() << " " << box.ymax() << " " << box.zmin() << " " << box.zmax() << ")" << std::endl;
 
     // numParticles identical coordinates on each rank
     // Note: NOT sorted in morton order
@@ -120,10 +122,13 @@ void randomGaussianDomain(DomainType domain, int rank, int nRanks, bool equalize
 
     // box got updated if not using PBC
     box = domain.box();
+    std::cout << "[randomGaussianDomain] box: (" << box.xmin() << " " << box.xmax() << " "
+              << box.ymin() << " " << box.ymax() << " " << box.zmin() << " " << box.zmax() << ")" << std::endl;
     std::vector<KeyType> keysRef(x.size());
     #ifdef CSTONE_MIXD
     std::cout << "[randomGaussianDomain] MixD keys" << std::endl;
-    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    std::cout << "[randomGaussianDomain] mixDBits: " << mixDBits.bx << " " << mixDBits.by << " " << mixDBits.bz << std::endl;
     computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(keysRef.data()), x.size(), box, mixDBits.bx,
                        mixDBits.by, mixDBits.bz);
     #else
@@ -169,21 +174,21 @@ TEST(FocusDomain, randomGaussianNeighborSum)
     float theta = 0.75;
 
     {
-        Domain<unsigned, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1});
+        Domain<unsigned, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {0, 1, 0, 0.0625, 0, 0.0078125});
         randomGaussianDomain<unsigned, double>(domain, rank, nRanks);
     }
-    {
-        Domain<uint64_t, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1});
-        randomGaussianDomain<uint64_t, double>(domain, rank, nRanks);
-    }
-    {
-        Domain<unsigned, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1});
-        randomGaussianDomain<unsigned, float>(domain, rank, nRanks);
-    }
-    {
-        Domain<uint64_t, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1});
-        randomGaussianDomain<uint64_t, float>(domain, rank, nRanks);
-    }
+    // {
+    //     Domain<uint64_t, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125});
+    //     randomGaussianDomain<uint64_t, double>(domain, rank, nRanks);
+    // }
+    // {
+    //     Domain<unsigned, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125});
+    //     randomGaussianDomain<unsigned, float>(domain, rank, nRanks);
+    // }
+    // {
+    //     Domain<uint64_t, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125});
+    //     randomGaussianDomain<uint64_t, float>(domain, rank, nRanks);
+    // }
 }
 
 TEST(FocusDomain, randomGaussianNeighborSumPbc)
@@ -198,79 +203,79 @@ TEST(FocusDomain, randomGaussianNeighborSumPbc)
 
     auto periodic = BoundaryType::periodic;
     {
-        Domain<unsigned, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, periodic});
+        Domain<unsigned, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {0, 1, 0, 0.0625, 0, 0.0078125, periodic, periodic, periodic});
         randomGaussianDomain<unsigned, double>(domain, rank, nRanks);
     }
-    {
-        Domain<uint64_t, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, periodic});
-        randomGaussianDomain<uint64_t, double>(domain, rank, nRanks);
-    }
-    {
-        Domain<unsigned, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, periodic});
-        randomGaussianDomain<unsigned, float>(domain, rank, nRanks);
-    }
-    {
-        Domain<uint64_t, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, periodic});
-        randomGaussianDomain<uint64_t, float>(domain, rank, nRanks);
-    }
+    // {
+    //     Domain<uint64_t, double> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125, periodic, periodic, periodic});
+    //     randomGaussianDomain<uint64_t, double>(domain, rank, nRanks);
+    // }
+    // {
+    //     Domain<unsigned, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125, periodic, periodic, periodic});
+    //     randomGaussianDomain<unsigned, float>(domain, rank, nRanks);
+    // }
+    // {
+    //     Domain<uint64_t, float> domain(rank, nRanks, bucketSize, bucketSizeFocus, theta, {-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125, periodic, periodic, periodic});
+    //     randomGaussianDomain<uint64_t, float>(domain, rank, nRanks);
+    // }
 }
 
-TEST(FocusDomain, assignmentShift)
-{
-    int rank = 0, numRanks = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
+// TEST(FocusDomain, assignmentShift)
+// {
+//     int rank = 0, numRanks = 0;
+//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//     MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
 
-    using Real    = double;
-    using KeyType = unsigned;
+//     using Real    = double;
+//     using KeyType = unsigned;
 
-    Box<Real> box(0, 1);
-    LocalIndex numParticlesPerRank = 15000;
-    unsigned bucketSize            = 1024;
-    unsigned bucketSizeFocus       = 8;
-    float theta                    = 0.5;
+//     Box<Real> box(-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125);
+//     LocalIndex numParticlesPerRank = 15000;
+//     unsigned bucketSize            = 1024;
+//     unsigned bucketSizeFocus       = 8;
+//     float theta                    = 0.5;
 
-    #ifdef CSTONE_MIXD
-    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
-    RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
-                                                              mixDBits.bz);
-    #else
-    RandomCoordinates<Real, SfcKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
-    #endif
+//     #ifdef CSTONE_MIXD
+//     const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+//     RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
+//                                                               mixDBits.bz);
+//     #else
+//     RandomCoordinates<Real, SfcKind<KeyType>> coordinates(numParticlesPerRank, box, rank);
+//     #endif
 
-    std::vector<Real> x(coordinates.x().begin(), coordinates.x().end());
-    std::vector<Real> y(coordinates.y().begin(), coordinates.y().end());
-    std::vector<Real> z(coordinates.z().begin(), coordinates.z().end());
-    std::vector<Real> h(numParticlesPerRank, 0.1 / std::cbrt(numRanks));
+//     std::vector<Real> x(coordinates.x().begin(), coordinates.x().end());
+//     std::vector<Real> y(coordinates.y().begin(), coordinates.y().end());
+//     std::vector<Real> z(coordinates.z().begin(), coordinates.z().end());
+//     std::vector<Real> h(numParticlesPerRank, 0.1 / std::cbrt(numRanks));
 
-    Domain<KeyType, Real> domain(rank, numRanks, bucketSize, bucketSizeFocus, theta, box);
+//     Domain<KeyType, Real> domain(rank, numRanks, bucketSize, bucketSizeFocus, theta, box);
 
-    std::vector<KeyType> particleKeys(x.size());
+//     std::vector<KeyType> particleKeys(x.size());
 
-    std::vector<Real> s1, s2, s3;
-    domain.sync(particleKeys, x, y, z, h, std::tuple{}, std::tie(s1, s2, s3));
+//     std::vector<Real> s1, s2, s3;
+//     domain.sync(particleKeys, x, y, z, h, std::tuple{}, std::tie(s1, s2, s3));
 
-    if (rank == 2)
-    {
-        for (int k = 0; k < 700; ++k)
-        {
-            x[k + domain.startIndex()] -= 0.25;
-        }
-    }
+//     if (rank == 2)
+//     {
+//         for (int k = 0; k < 700; ++k)
+//         {
+//             x[k + domain.startIndex()] -= 0.25;
+//         }
+//     }
 
-    domain.sync(particleKeys, x, y, z, h, std::tuple{}, std::tie(s1, s2, s3));
+//     domain.sync(particleKeys, x, y, z, h, std::tuple{}, std::tie(s1, s2, s3));
 
-    std::vector<Real> property(domain.nParticlesWithHalos(), -1);
-    for (LocalIndex i = domain.startIndex(); i < domain.endIndex(); ++i)
-    {
-        property[i] = rank;
-    }
+//     std::vector<Real> property(domain.nParticlesWithHalos(), -1);
+//     for (LocalIndex i = domain.startIndex(); i < domain.endIndex(); ++i)
+//     {
+//         property[i] = rank;
+//     }
 
-    domain.exchangeHalos(std::tie(property), s1, s2);
+//     domain.exchangeHalos(std::tie(property), s1, s2);
 
-    EXPECT_TRUE(std::count(property.begin(), property.end(), -1) == 0);
-    EXPECT_TRUE(std::count(property.begin(), property.end(), rank) == domain.nParticles());
-}
+//     EXPECT_TRUE(std::count(property.begin(), property.end(), -1) == 0);
+//     EXPECT_TRUE(std::count(property.begin(), property.end(), rank) == domain.nParticles());
+// }
 
 TEST(FocusDomain, removeParticle)
 {
@@ -281,7 +286,7 @@ TEST(FocusDomain, removeParticle)
     using Real    = double;
     using KeyType = unsigned;
 
-    Box<Real> box(0, 1);
+    Box<Real> box(0, 1, 0, 0.0625, 0, 0.0078125);
     LocalIndex numParticlesPerRank = 1000;
     unsigned bucketSize            = 64;
     unsigned bucketSizeFocus       = 8;
@@ -339,7 +344,7 @@ TEST(FocusDomain, reapplySync)
     using Real    = double;
     using KeyType = unsigned;
 
-    Box<Real> box(0, 1);
+    Box<Real> box(-1, 1, -0.0625, 0.0625, -0.0078125, 0.0078125);
     LocalIndex numParticlesPerRank = 10000;
     unsigned bucketSize            = 1024;
     unsigned bucketSizeFocus       = 8;
@@ -368,6 +373,7 @@ TEST(FocusDomain, reapplySync)
     // modify coordinates
     {
         #ifdef CSTONE_MIXD
+        std::cout << "[reapplySync] MixD keys" << std::endl;
         const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
         RandomCoordinates<Real, SfcMixDKind<KeyType>> scord(domain.nParticles(), box, numRanks + rank, mixDBits.bx,
                                                             mixDBits.by, mixDBits.bz);

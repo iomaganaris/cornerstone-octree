@@ -61,8 +61,31 @@ HOST_DEVICE_FUN Vec4<T> computeMinMacR2(KeyType prefix, float invThetaEff, const
     KeyType nodeKey  = decodePlaceholderBit(prefix);
     int prefixLength = decodePrefixLength(prefix);
 
+    #ifdef CSTONE_MIXD
+    unsigned level              = decodePrefixLength(prefix) / 3;
+    unsigned level_key          = octalDigit(nodeKey, level);
+    const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
+    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+    std::sort(std::begin(sorted), std::end(sorted));
+    IBox cellBox              = sfcIBox(sfcMixDKey<KeyType>(nodeKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    if (level_from_right > sorted[2] && level_key > 0)
+    {
+        geoSize = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
+    {
+        geoSize = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
+    {
+        geoSize = {0, 0, 0};
+    }
+    #else
     IBox cellBox              = sfcIBox(sfcKey(nodeKey), prefixLength / 3);
     auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    #endif
 
     T l   = T(2) * max(geoSize);
     T mac = l * invThetaEff;
@@ -84,8 +107,31 @@ HOST_DEVICE_FUN T computeVecMacR2(KeyType prefix, Vec3<T> expCenter, float invTh
     KeyType nodeKey  = decodePlaceholderBit(prefix);
     int prefixLength = decodePrefixLength(prefix);
 
+    #ifdef CSTONE_MIXD
+    unsigned level              = decodePrefixLength(prefix) / 3;
+    unsigned level_key          = octalDigit(nodeKey, level);
+    const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
+    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+    std::sort(std::begin(sorted), std::end(sorted));
+    IBox cellBox              = sfcIBox(sfcMixDKey<KeyType>(nodeKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    if (level_from_right > sorted[2] && level_key > 0)
+    {
+        geoSize = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
+    {
+        geoSize = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
+    {
+        geoSize = {0, 0, 0};
+    }
+    #else
     IBox cellBox              = sfcIBox(sfcKey(nodeKey), prefixLength / 3);
     auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    #endif
 
     Vec3<T> dX = expCenter - geoCenter;
 
@@ -255,13 +301,30 @@ void markMacs(const KeyType* prefixes,
 #pragma omp parallel for schedule(dynamic)
     for (TreeNodeIndex i = 0; i < numFocusNodes; ++i)
     {
+        std::cout << "[markMacs] focusNodes[" << i << "]: " << std::oct << focusNodes[i] << std::dec << std::endl;
+        // #ifdef CSTONE_MIXD
+        // const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+        // unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+        // std::sort(std::begin(sorted), std::end(sorted));
+        // IBox target = hilbertMixDIBoxKeys(focusNodes[i], focusNodes[i + 1], mixDBits.bx, mixDBits.by, mixDBits.bz);
+        // IBox targetExt = IBox(target.xmin() - 1, target.xmax() + 1, target.ymin() - 1, target.ymax() + 1,
+        //                       target.zmin() - 1, target.zmax() + 1);
+        // #else
         IBox target    = sfcIBox(sfcKey(focusNodes[i]), sfcKey(focusNodes[i + 1]));
         IBox targetExt = IBox(target.xmin() - 1, target.xmax() + 1, target.ymin() - 1, target.ymax() + 1,
                               target.zmin() - 1, target.zmax() + 1);
+        // #endif
         if (containedIn(focusStart, focusEnd, targetExt)) { continue; }
 
+        #ifdef CSTONE_MIXD
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+        auto [targetCenter, targetSize] = centerAndSize<KeyType>(target, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+        unsigned maxLevel               = sorted[0];
+        #else
         auto [targetCenter, targetSize] = centerAndSize<KeyType>(target, box);
         unsigned maxLevel               = maxTreeLevel<KeyType>{};
+        #endif
         if (limitSource) { maxLevel = std::max(int(treeLevel(focusNodes[i + 1] - focusNodes[i])) - 1, 0); }
         markMacPerBox(targetCenter, targetSize, maxLevel, prefixes, childOffsets, centers, box, focusStart, focusEnd,
                       markings);

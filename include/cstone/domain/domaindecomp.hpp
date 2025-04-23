@@ -196,6 +196,9 @@ void translateAssignment(const SfcAssignment<KeyType>& assignment,
         TreeNodeIndex startIndex = findNodeAbove(focusTree.data(), focusTree.size(), assignment[peer]);
         TreeNodeIndex endIndex   = findNodeBelow(focusTree.data(), focusTree.size(), assignment[peer + 1]);
 
+        // std::cout << "[translateAssignment] rank " << myRank <<  " peer " << peer << " " << std::oct << assignment[peer] << " - "
+        //           << assignment[peer + 1] << std::dec << " -> " << startIndex << " - " << endIndex << std::endl;
+
         if (endIndex < startIndex) { endIndex = startIndex; }
         focusAssignment[peer] = TreeIndexPair(startIndex, endIndex);
     }

@@ -66,6 +66,7 @@ std::vector<int> findPeersMac(int myRank,
                               const Box<T>& box,
                               float invThetaEff)
 {
+    std::cout << "findPeersMac" << std::endl;
     KeyType domainStart = assignment[myRank];
     KeyType domainEnd   = assignment[myRank + 1];
 
@@ -77,10 +78,59 @@ std::vector<int> findPeersMac(int myRank,
         // node a has to overlap/be contained in the focus, while b must not be inside it
         if (!aFocusOverlap || bInFocus) { return false; }
 
+        #ifdef CSTONE_MIXD
+        auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+        KeyType startKeyA = tree.codeStart(a);
+        KeyType startKeyB = tree.codeStart(b);
+        KeyType levelA    = tree.level(a);
+        KeyType levelB    = tree.level(b);
+        KeyType levelKeyA = octalDigit(startKeyA, levelA);
+        KeyType levelKeyB = octalDigit(startKeyB, levelB);
+        const auto levelFromRightA = maxTreeLevel<KeyType>{} - levelA + 1;
+        const auto levelFromRightB = maxTreeLevel<KeyType>{} - levelB + 1;
+        unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+        std::sort(std::begin(sorted), std::end(sorted));
+        
+        IBox aBox             = sfcIBox(sfcMixDKey(startKeyA), levelFromRightA - 1, mixDBits.bx, mixDBits.by,
+                                       mixDBits.bz);
+        IBox bBox             = sfcIBox(sfcMixDKey(startKeyB), levelFromRightB - 1, mixDBits.bx, mixDBits.by,
+                                       mixDBits.bz);
+        auto [aCenter, aSize] = centerAndSize<KeyType>(aBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        auto [bCenter, bSize] = centerAndSize<KeyType>(bBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        // std::cout << "aCenter: " << aCenter[0] << ", " << aCenter[1] << ", " << aCenter[2] << std::endl;
+        // std::cout << "aSize: " << aSize[0] << ", " << aSize[1] << ", " << aSize[2] << std::endl;
+        // std::cout << "bCenter: " << bCenter[0] << ", " << bCenter[1] << ", " << bCenter[2] << std::endl;
+        // std::cout << "bSize: " << bSize[0] << ", " << bSize[1] << ", " << bSize[2] << std::endl;
+        if (levelFromRightA > sorted[2] && levelKeyA > 0)
+        {
+            aSize = {0, 0, 0};
+        }
+        else if (levelFromRightA <= sorted[2] && levelFromRightA > sorted[1] && levelKeyA > 1)
+        {
+            aSize = {0, 0, 0};
+        }
+        else if (levelFromRightA <= sorted[1] && levelFromRightA > sorted[0] && levelKeyA > 3)
+        {
+            aSize = {0, 0, 0};
+        }
+        if (levelFromRightB > sorted[2] && levelKeyB > 0)
+        {
+            bSize = {0, 0, 0};
+        }
+        else if (levelFromRightB <= sorted[2] && levelFromRightB > sorted[1] && levelKeyB > 1)
+        {
+            bSize = {0, 0, 0};
+        }
+        else if (levelFromRightB <= sorted[1] && levelFromRightB > sorted[0] && levelKeyB > 3)
+        {
+            bSize = {0, 0, 0};
+        }
+        #else
         IBox aBox             = sfcIBox(sfcKey(tree.codeStart(a)), tree.level(a));
         IBox bBox             = sfcIBox(sfcKey(tree.codeStart(b)), tree.level(b));
         auto [aCenter, aSize] = centerAndSize<KeyType>(aBox, box);
         auto [bCenter, bSize] = centerAndSize<KeyType>(bBox, box);
+        #endif
         return !minVecMacMutual(aCenter, aSize, bCenter, bSize, box, invThetaEff);
     };
 
@@ -93,9 +143,15 @@ std::vector<int> findPeersMac(int myRank,
         if (peerRanks[peerRank] == 0) { peerRanks[peerRank] = 1; }
     };
 
-    std::vector<KeyType> spanningNodeKeys(spanSfcRange(domainStart, domainEnd) + 1);
+    #ifdef CSTONE_MIXD
+    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    std::vector<KeyType> spanningNodeKeys(spanSfcRangeMixD(domainStart, domainEnd, mixDBits.bx, mixDBits.by, mixDBits.bz) + 1);
+    #else
+    std::vector<KeyType> spanningNodeKeys(spanSfcRangeMixD(domainStart, domainEndmixDBits.bx, mixDBits.by, mixDBits.bz) + 1);
     spanSfcRange(domainStart, domainEnd, spanningNodeKeys.data());
+    #endif
     spanningNodeKeys.back() = domainEnd;
+    std::cout << "[findPeersMac] spanningNodeKeys done" << std::endl;
 
     const KeyType* nodeKeys         = domainTree.nodeKeys().data();
     const TreeNodeIndex* levelRange = domainTree.levelRange().data();
@@ -106,6 +162,7 @@ std::vector<int> findPeersMac(int myRank,
         TreeNodeIndex nodeIdx = locateNode(spanningNodeKeys[i], spanningNodeKeys[i + 1], nodeKeys, levelRange);
         dualTraversal(domainTree, nodeIdx, 0, crossFocusPairs, m2l, p2p);
     }
+    std::cout << "[findPeersMac] dualTraversal done" << std::endl;
 
     std::vector<int> ret;
     for (int i = 0; i < int(peerRanks.size()); ++i)
@@ -124,6 +181,7 @@ std::vector<int> findPeersMacStt(int myRank,
                                  const Box<T>& box,
                                  float invThetaEff)
 {
+    std::cout << "findPeersMacStt" << std::endl;
     KeyType domainStart     = assignment[myRank];
     KeyType domainEnd       = assignment[myRank + 1];
     const KeyType* leaves   = octree.treeLeaves().data();

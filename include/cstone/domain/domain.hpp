@@ -217,15 +217,19 @@ public:
         float invThetaEff      = invThetaMinMac(theta_);
         std::vector<int> peers = findPeersMac(myRank_, global_.assignment(), global_.octree(), box(), invThetaEff);
 
+        std::cout << "[Domain::sync] rank " << myRank_ << " found " << peers.size() << " peers" << std::endl;
+
         if (firstCall_)
         {
             focusTree_.converge(box(), keyView, peers, global_.assignment(), global_.treeLeaves(), global_.nodeCounts(),
                                 invThetaEff, std::get<0>(scratch));
         }
         focusTree_.updateMinMac(global_.assignment(), invThetaEff);
+        std::cout << "[Domain::sync] rank " << myRank_ << " updated minMac" << std::endl;
         focusTree_.updateTree(peers, global_.assignment(), box());
+        std::cout << "[Domain::sync] rank " << myRank_ << " updated tree" << std::endl;
         focusTree_.updateCounts(keyView, global_.treeLeaves(), global_.nodeCounts(), std::get<0>(scratch));
-
+        std::cout << "[Domain::sync] rank " << myRank_ << " updated counts" << std::endl;
         auto octreeView            = focusTree_.octreeViewAcc();
         const KeyType* focusLeaves = focusTree_.treeLeavesAcc().data();
 
@@ -234,11 +238,14 @@ public:
         halos_.discover(octreeView.prefixes, octreeView.childOffsets, octreeView.internalToLeaf, focusLeaves,
                         focusTree_.leafCountsAcc(), focusTree_.assignment(), {rawPtr(layoutAcc_), layoutAcc_.size()},
                         box(), rawPtr(h), haloSearchExt_, std::get<0>(scratch));
+        std::cout << "[Domain::sync] rank " << myRank_ << " discovered halos" << std::endl;
         halos_.computeLayout(focusTree_.treeLeaves(), focusTree_.leafCounts(), focusTree_.assignment(), peers, layout_);
-
+        std::cout << "[Domain::sync] rank " << myRank_ << " computed layout" << std::endl;
         updateLayout(sorter, exchangeStart, keyView, particleKeys, std::tie(h),
                      std::tuple_cat(std::tie(x, y, z), particleProperties), scratch);
+        std::cout << "[Domain::sync] rank " << myRank_ << " updated layout" << std::endl;
         setupHalos(particleKeys, x, y, z, h, scratch);
+        std::cout << "[Domain::sync] rank " << myRank_ << " setup halos" << std::endl;
         firstCall_ = false;
     }
 

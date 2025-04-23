@@ -162,12 +162,16 @@ public:
     using KeyType = KeyType_;
     using Integer = typename KeyType::ValueType;
 
-    RandomGaussianCoordinates(unsigned n, Box<T> box, int seed = 42)
+    RandomGaussianCoordinates(unsigned n, Box<T> box, int seed = 42, unsigned bx = maxTreeLevel<Integer>{},
+                              unsigned by = maxTreeLevel<Integer>{}, unsigned bz = maxTreeLevel<Integer>{})
         : box_(std::move(box))
         , x_(n)
         , y_(n)
         , z_(n)
         , codes_(n)
+        , bx_(bx)
+        , by_(by)
+        , bz_(bz)
     {
         // std::random_device rd;
         std::mt19937 gen(seed);
@@ -192,7 +196,7 @@ public:
         auto keyData = (KeyType*)(codes_.data());
         if constexpr (std::is_same_v<KeyType, SfcMixDKind<Integer>>)
         {
-            computeSfcMixDKeys(x_.data(), y_.data(), z_.data(), keyData, n, box);
+            computeSfcMixDKeys(x_.data(), y_.data(), z_.data(), keyData, n, box, bx, by, bz);
         }
         else { computeSfcKeys(x_.data(), y_.data(), z_.data(), keyData, n, box); }
 
@@ -218,6 +222,7 @@ private:
     Box<T> box_;
     std::vector<T> x_, y_, z_;
     std::vector<Integer> codes_;
+    unsigned bx_, by_, bz_;
 };
 
 //! @brief can be used to calculate reasonable smoothing lengths for each particle

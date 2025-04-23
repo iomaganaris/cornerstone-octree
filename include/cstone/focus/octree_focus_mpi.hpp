@@ -471,6 +471,8 @@ public:
             {
                 //! set centers to geometric centers for min dist Mac
                 centers_[i] = computeMinMacR2(nodeKeys[i], invThetaEff, box_);
+                std::cout << "[updateMinMac] centers_[" << i << "] = " << centers_[i][0] << " " << centers_[i][1] << " "
+                          << centers_[i][2] << std::endl;
             }
         }
 
@@ -504,6 +506,7 @@ public:
      */
     void updateMacs(const SfcAssignment<KeyType>& assignment, float invTheta)
     {
+        std::cout << "[updateMacs]" << std::endl;
         setMacRadius(invTheta);
         macs_.resize(treeData_.numNodes);
 
@@ -528,6 +531,7 @@ public:
         }
 
         rebalanceStatus_ |= macCriterion;
+        std::cout << "[updateMacs] done" << std::endl;
     }
 
     //! @brief update until converged with a simple min-distance MAC

@@ -62,13 +62,19 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
     float theta                   = 10.0;
     float invThetaEff             = invThetaMinMac(theta);
 
-    Box<T> box{-1, 1};
+    Box<T> box{0., 1., 0., 0.015625, 0., 0.00390625};
 
     // ******************************
     // identical data on all ranks
 
     // common pool of coordinates, identical on all ranks
-    RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box);
+    #ifdef CSTONE_MIXD
+    const auto mixDimensionsBits = getBoxMixDimensionBits<T, KeyType>(box);
+    RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numRanks * numParticles, box, 42, mixDimensionsBits.bx, 
+                                                               mixDimensionsBits.by, mixDimensionsBits.bz);
+    #else
+    RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box, 42);
+    #endif
 
     auto [tree, counts] = computeOctree(coords.particleKeys().data(),
                                         coords.particleKeys().data() + coords.particleKeys().size(), bucketSize);
@@ -78,9 +84,22 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
 
     auto assignment = makeSfcAssignment(numRanks, counts, tree.data());
 
+    // print assignment
+    for (int i = 0; i < numRanks + 1; ++i)
+    {
+        std::cout << "assignment[" << i << "] = " << std::oct << assignment[i] << std::dec << std::endl;
+    }
+
     // *******************************
 
     auto peers = findPeersMac(thisRank, assignment, domainTree, box, invThetaEff);
+
+    std::cout << "rank " << thisRank << " peers: ";
+    for (auto peer : peers)
+    {
+        std::cout << peer << " ";
+    }
+    std::cout << std::endl;
 
     KeyType focusStart = assignment[thisRank];
     KeyType focusEnd   = assignment[thisRank + 1];
@@ -97,10 +116,18 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
 
     // Now build the focused tree using distributed algorithms. Each rank only uses its slice.
     std::vector<KeyType> particleKeys(lastAssignedIndex - firstAssignedIndex);
+    #ifdef CSTONE_MIXD
+    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box, 
+                       mixDimensionsBits.bx, mixDimensionsBits.by, mixDimensionsBits.bz);
+    #else
     computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
+    #endif
+
+    std::cout << "[generalExchangeRandomGaussian] focusTree.converge" << std::endl;
 
     FocusedOctree<KeyType, T> focusTree(thisRank, numRanks, bucketSizeLocal);
     focusTree.converge(box, particleKeys, peers, assignment, tree, counts, invThetaEff);
+    std::cout << "[generalExchangeRandomGaussian] focusTree converged" << std::endl;
 
     auto octree = focusTree.octreeViewAcc();
     std::vector<unsigned> testCounts(octree.numNodes, -1);

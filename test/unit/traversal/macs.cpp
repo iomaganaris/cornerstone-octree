@@ -144,7 +144,7 @@ static void markMacVector()
     LocalIndex numParticles = 1000;
     unsigned bucketSize     = 2;
     float theta             = 0.58;
-    Box<T> box(0, 1);
+    Box<T> box(0., 1., 0., 0.015625, 0., 0.00390625);
 
     RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numParticles, box);
     std::vector<T> masses(numParticles, 1.0 / numParticles);

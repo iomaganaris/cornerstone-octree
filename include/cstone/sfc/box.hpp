@@ -459,9 +459,9 @@ Box<T> limitBoxShrinking(const Box<T>& fittingBox, const Box<T>& previousBox, co
 
 struct AxisMixDBits
 {
-    int bx = 0;
-    int by = 0;
-    int bz = 0;
+    unsigned bx = 0;
+    unsigned by = 0;
+    unsigned bz = 0;
 };
 
 template <typename T, typename KeyType>
