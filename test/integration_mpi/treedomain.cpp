@@ -74,8 +74,15 @@ void globalRandomGaussian(int thisRank, int numRanks)
     LocalIndex numParticles = 1000;
     unsigned bucketSize     = 64;
 
+    #ifdef CSTONE_MIXD
+    Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numParticles, box, thisRank, mixDBits.bx, mixDBits.by,
+                                                             mixDBits.bz);
+    #else
     Box<T> box{-1, 1};
     RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numParticles, box, thisRank);
+    #endif
 
     std::vector<KeyType> tree = makeRootNodeTree<KeyType>();
     std::vector<unsigned> counts{numRanks * unsigned(numParticles)};
@@ -113,7 +120,12 @@ void globalRandomGaussian(int thisRank, int numRanks)
     /// if the global tree build and assignment is repeated, no particles are exchanged anymore
 
     std::vector<KeyType> newCodes(x.size());
+    #ifdef CSTONE_MIXD
+    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(newCodes.data()), x.size(), box, mixDBits.bx,
+                       mixDBits.by, mixDBits.bz);
+    #else
     computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(newCodes.data()), x.size(), box);
+    #endif
 
     // received particles are not stored in SFC order after the exchange
     std::sort(begin(newCodes), end(newCodes));
