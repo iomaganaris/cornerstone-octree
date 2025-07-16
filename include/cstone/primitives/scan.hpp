@@ -65,10 +65,7 @@ void exclusiveScan(const T1* in, T2* out, size_t numElements)
     }
 #endif
 
-    T2 superBlock[2][numThreads + 1];
-    std::fill(superBlock[0], superBlock[0] + numThreads + 1, 0);
-    std::fill(superBlock[1], superBlock[1] + numThreads + 1, 0);
-
+    std::vector<std::vector<T2>> superBlock(2, std::vector<T2>(numThreads + 1, 0));
     unsigned elementsPerStep = numThreads * blockSize;
     unsigned nSteps          = numElements / elementsPerStep;
 
@@ -131,9 +128,7 @@ void exclusiveScan(T* out, size_t numElements)
         numThreads = omp_get_num_threads();
     }
 
-    T superBlock[2][numThreads + 1];
-    std::fill(superBlock[0], superBlock[0] + numThreads + 1, 0);
-    std::fill(superBlock[1], superBlock[1] + numThreads + 1, 0);
+    std::vector<std::vector<T>> superBlock(2, std::vector<T>(numThreads + 1, 0));
 
     unsigned elementsPerStep = numThreads * blockSize;
     unsigned nSteps          = numElements / elementsPerStep;
