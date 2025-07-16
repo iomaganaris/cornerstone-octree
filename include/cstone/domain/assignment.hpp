@@ -86,7 +86,7 @@ public:
 
         #ifdef CSTONE_MIXD
         std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
-        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box_);
         computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
                            numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
         #else
@@ -158,7 +158,7 @@ public:
 
         #ifdef CSTONE_MIXD
         std::cout << "[GlobalAssignment][distribute] computeSfcMixDKeys" << std::endl;
-        const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box_);
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box_);
         computeSfcMixDKeys(x + recvStart, y + recvStart, z + recvStart, SfcMixDKindPointer(keys + recvStart),
                            numRecv, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
         #else

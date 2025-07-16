@@ -625,7 +625,7 @@ private:
         else {
             #ifdef CSTONE_MIXD
             // std::cout << "Using MixD for geo centers" << std::endl;
-            const auto mixDBits = getBoxMixDimensionBits<RealType, KeyType>(box_);
+            const auto mixDBits = getBoxMixDimensionBits<RealType, KeyType, Box<RealType>>(box_);
             nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_, mixDBits.bx,
                                    mixDBits.by, mixDBits.bz);
             #else

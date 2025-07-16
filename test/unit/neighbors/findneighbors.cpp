@@ -314,7 +314,7 @@ public:
         Box<double> box{box_limits[0], box_limits[1], box_limits[2], box_limits[3], box_limits[4],
                         box_limits[5], usePbc,        usePbc,        usePbc};
 
-        const auto mixDBits = getBoxMixDimensionBits<double, KeyType>(box);
+        const auto mixDBits = getBoxMixDimensionBits<double, KeyType, Box<double>>(box);
 
         CoordinateKind<double, KeyType> coords(nParticles, box, 42, mixDBits.bx, mixDBits.by, mixDBits.bz);
 
@@ -338,7 +338,7 @@ public:
         Box<double> box{box_limits[0], box_limits[1], box_limits[2], box_limits[3], box_limits[4],
                         box_limits[5], usePbc,        usePbc,        usePbc};
 
-                        const auto mixDBits = getBoxMixDimensionBits<double, KeyTypeMixD>(box);
+        const auto mixDBits = getBoxMixDimensionBits<double, KeyTypeMixD, Box<double>>(box);
 
         CoordinateKind<double, KeyType3D> coords3D(nParticles, box, 42);
         CoordinateKind<double, KeyTypeMixD> coordsMixD(nParticles, box, 42, mixDBits.bx, mixDBits.by,

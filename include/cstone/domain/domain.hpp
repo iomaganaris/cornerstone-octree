@@ -534,7 +534,7 @@ private:
         else
         {
             #ifdef CSTONE_MIXD
-            const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box());
+            const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box());
             computeSfcMixDKeys(rawPtr(x), rawPtr(y), rawPtr(z), SfcMixDKindPointer(rawPtr(keys)), bufDesc_.start, box(),
                                mixDBits.bx, mixDBits.by, mixDBits.bz);
             computeSfcMixDKeys(rawPtr(x) + bufDesc_.end, rawPtr(y) + bufDesc_.end, rawPtr(z) + bufDesc_.end,

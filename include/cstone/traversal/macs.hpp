@@ -257,7 +257,7 @@ void markMacs(const KeyType* prefixes,
     KeyType focusEnd   = focusNodes[numFocusNodes];
 
     #ifdef CSTONE_MIXD
-    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
     #endif
 
 #pragma omp parallel for schedule(dynamic)

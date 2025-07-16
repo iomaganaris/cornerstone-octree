@@ -64,7 +64,7 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
 
     #ifdef CSTONE_MIXD
     Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
-    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
     #else
     Box<T> box{-1, 1};
     #endif

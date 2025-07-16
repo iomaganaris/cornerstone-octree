@@ -123,7 +123,7 @@ void randomGaussianDomain(DomainType domain, int rank, int nRanks, bool equalize
     std::vector<KeyType> keysRef(x.size());
     #ifdef CSTONE_MIXD
     std::cout << "[randomGaussianDomain] MixD keys" << std::endl;
-    auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
     computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(keysRef.data()), x.size(), box, mixDBits.bx,
                        mixDBits.by, mixDBits.bz);
     #else
@@ -231,7 +231,7 @@ TEST(FocusDomain, assignmentShift)
     float theta                    = 0.5;
 
     #ifdef CSTONE_MIXD
-    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType, Box<Real>>(box);
     RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
                                                               mixDBits.bz);
     #else
@@ -347,7 +347,7 @@ TEST(FocusDomain, reapplySync)
 
     // Note: rank used as seed, so each rank will get different coordinates
     #ifdef CSTONE_MIXD
-    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+    const auto mixDBits = getBoxMixDimensionBits<Real, KeyType, Box<Real>>(box);
     RandomCoordinates<Real, SfcMixDKind<KeyType>> coordinates(numParticlesPerRank, box, rank, mixDBits.bx, mixDBits.by,
                                                               mixDBits.bz);
     #else
@@ -368,7 +368,7 @@ TEST(FocusDomain, reapplySync)
     // modify coordinates
     {
         #ifdef CSTONE_MIXD
-        const auto mixDBits = getBoxMixDimensionBits<Real, KeyType>(box);
+        const auto mixDBits = getBoxMixDimensionBits<Real, KeyType, Box<Real>>(box);
         RandomCoordinates<Real, SfcMixDKind<KeyType>> scord(domain.nParticles(), box, numRanks + rank, mixDBits.bx,
                                                             mixDBits.by, mixDBits.bz);
         #else

@@ -165,7 +165,7 @@ std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixDTree(TreeType tree, const TreeNodeI
     unsigned level              = tree.level(node);
     unsigned level_key          = octalDigit(startKey, level);
     const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
-    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType>(box);
+    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
     unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
     std::sort(std::begin(sorted), std::end(sorted));
     auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
@@ -196,7 +196,7 @@ std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixD(const KeyType& prefix, const Box<T
     unsigned level              = decodePrefixLength(prefix) / 3;
     unsigned level_key          = octalDigit(startKey, level);
     const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
-    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType>(box);
+    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
     unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
     std::sort(std::begin(sorted), std::end(sorted));
     auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);

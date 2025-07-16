@@ -464,16 +464,16 @@ struct AxisMixDBits
     unsigned bz = 0;
 };
 
-template <typename T, typename KeyType>
-AxisMixDBits getBoxMixDimensionBits(const Box<T>& box) {
-    const std::array<double, 3> boxDimensions{box.xmax() - box.xmin(), box.ymax() - box.ymin(),
+template <typename T, typename KeyType, typename BoxType>
+AxisMixDBits getBoxMixDimensionBits(const BoxType& box) {
+    const std::array<T, 3> boxDimensions{box.xmax() - box.xmin(), box.ymax() - box.ymin(),
         box.zmax() - box.zmin()};
     const auto max_dim_index = std::max_element(boxDimensions.begin(), boxDimensions.end()) - boxDimensions.begin();
     const auto max_dim_value = boxDimensions[max_dim_index];
     AxisMixDBits bit_limits;
 
     for (int i = 0; i < 3; ++i) {
-        const auto bits = i == max_dim_index ? maxTreeLevel<KeyType>{} : maxTreeLevel<KeyType>{} - static_cast<int>(std::ceil(std::log2(max_dim_value / boxDimensions[i])));
+        const auto bits = boxDimensions[i] == max_dim_value ? maxTreeLevel<KeyType>{} : maxTreeLevel<KeyType>{} - static_cast<int>(std::ceil(std::log2(max_dim_value / boxDimensions[i])));
         if (i == 0) bit_limits.bx = bits;
         else if (i == 1) bit_limits.by = bits;
         else if (i == 2) bit_limits.bz = bits;

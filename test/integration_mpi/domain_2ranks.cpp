@@ -368,7 +368,7 @@ void multiStepSync(int rank, int numRanks)
     // keys correspond to particles and are SFC sorted
     std::vector<KeyType> keysChk(domain.nParticlesWithHalos());
     #ifdef CSTONE_MIXD
-    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(domain.box());
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(domain.box());
     computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(keysChk.data()), x.size(), domain.box(), mixDBits.bx,
                        mixDBits.by, mixDBits.bz);
     #else
