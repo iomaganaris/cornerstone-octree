@@ -252,4 +252,14 @@ HOST_DEVICE_FUN T minDistanceSq(IBox a, IBox b, const Box<T>& box)
     return norm2(minDistance(aCenter, aSize, bCenter, bSize, box));
 }
 
+//! @brief Convenience wrapper to minDistance. This should only be used for testing.
+template<class KeyType, class T>
+HOST_DEVICE_FUN T minDistanceSq(IBox a, IBox b, const Box<T>& box, unsigned bx, unsigned by, unsigned bz)
+{
+
+    auto [aCenter, aSize] = centerAndSize<KeyType>(a, box, bx, by, bz);
+    auto [bCenter, bSize] = centerAndSize<KeyType>(b, box, bx, by, bz);
+    return norm2(minDistance(aCenter, aSize, bCenter, bSize, box));
+}
+
 } // namespace cstone
