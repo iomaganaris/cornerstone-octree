@@ -545,6 +545,7 @@ public:
         while (converged != numRanks_)
         {
             updateMinMac(assignment, invThetaEff);
+            std::cout << "[converge] myRank " << myRank_ << " peers: " << peers.size() << std::endl;
             converged = updateTree(peers, assignment, box);
             updateCounts(particleKeys, globalTreeLeaves, globalCounts, scratch);
             updateGeoCenters();
