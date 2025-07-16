@@ -158,6 +158,65 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>*
     }
 }
 
+template<class TreeType, class KeyType, class T>
+std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixDTree(TreeType tree, const TreeNodeIndex node, const Box<T>& box)
+{
+    KeyType startKey            = tree.codeStart(node);
+    unsigned level              = tree.level(node);
+    unsigned level_key          = octalDigit(startKey, level);
+    const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
+    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType>(box);
+    unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+    std::sort(std::begin(sorted), std::end(sorted));
+    auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    Vec3<T> center, size;
+    util::tie(center, size) = centerAndSize<KeyType>(nodeBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    if (level_from_right > sorted[2] && level_key > 0)
+    {
+        size = {0, 0, 0};
+        tree.setEmpty(node);
+    }
+    else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
+    {
+        size = {0, 0, 0};
+        tree.setEmpty(node);
+    }
+    else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
+    {
+        size = {0, 0, 0};
+        tree.setEmpty(node);
+    }
+    return {center, size};
+}
+
+template<class KeyType, class T>
+std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixD(const KeyType& prefix, const Box<T>& box)
+{
+    KeyType startKey            = decodePlaceholderBit(prefix);
+    unsigned level              = decodePrefixLength(prefix) / 3;
+    unsigned level_key          = octalDigit(startKey, level);
+    const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
+    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType>(box);
+    unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
+    std::sort(std::begin(sorted), std::end(sorted));
+    auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    Vec3<T> center, size;
+    util::tie(center, size) = centerAndSize<KeyType>(nodeBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    if (level_from_right > sorted[2] && level_key > 0)
+    {
+        size = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
+    {
+        size = {0, 0, 0};
+    }
+    else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
+    {
+        size = {0, 0, 0};
+    }
+    return {center, size};
+}
+
 //! @brief compute geometric node centers based on node MixD SFC keys and the global bounding box
 template<class KeyType, class T>
 void nodeFpCenters(gsl::span<const KeyType> prefixes,
@@ -171,11 +230,6 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < prefixes.size(); ++i)
     {
-        KeyType prefix              = prefixes[i];
-        KeyType startKey            = decodePlaceholderBit(prefix);
-        unsigned level              = decodePrefixLength(prefix) / 3;
-        unsigned level_key          = octalDigit(startKey, level);
-        const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
         // std::cout << "[nodeFpCentersMixD] prefix: " << std::oct << prefix << std::dec << std::endl;
         // std::cout << "[nodeFpCentersMixD] startKey: " << startKey << " oct: " << std::oct << startKey << std::dec
         //           << std::endl;
@@ -186,26 +240,7 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
 
         // util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, bx, by, bz);
         // Sort bx, by, bz in descending order
-        unsigned sorted[3] = {bx, by, bz};
-        std::sort(std::begin(sorted), std::end(sorted));
         // std::cout << "Sorted dimensions: " << sorted[0] << ", " << sorted[1] << ", " << sorted[2] << std::endl;
-        if (level_from_right > sorted[2] && level_key > 0)
-        {
-            sizes[i] = {0, 0, 0};
-            continue;
-        }
-        else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
-        {
-            sizes[i] = {0, 0, 0};
-            continue;
-        }
-        else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
-        {
-            sizes[i] = {0, 0, 0};
-            continue;
-        }
-        auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, bx, by, bz);
-        util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, bx, by, bz);
         // std::cout << "[nodeFpCentersMixD] nodeBox: (" << nodeBox.xmin() << ", " << nodeBox.xmax() << ", "
         //           << nodeBox.ymin() << ", " << nodeBox.ymax() << ", " << nodeBox.zmin() << ", " << nodeBox.zmax() << ")"
         //           << std::endl;
@@ -214,6 +249,9 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
         // std::cout << "[nodeFpCentersMixD] i: " << i << " Center: " << centers[i][0] << ", " << centers[i][1] << ", "
         //           << centers[i][2] << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2]
         //           << std::endl;
+        const auto centerAndSize = getCenterSizeMixD(prefixes[i], box);
+        centers[i]               = centerAndSize.first;
+        sizes[i]                 = centerAndSize.second;
     }
 }
 
