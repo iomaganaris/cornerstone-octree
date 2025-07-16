@@ -26,7 +26,7 @@ addCstoneMpiTest(domain_2ranks.cpp domain_2ranks GlobalDomain2Ranks 2)
 addCstoneMpiTest(domain_resize.cpp domain_resize GlobalDomainResize 2)
 
 addCstoneMpiTest(treedomain.cpp treedomain GlobalDomainTreeIntregration 10)
-addCstoneMpiTest(exchange_general.cpp exchange_general GeneralFocusExchange 10)
+addCstoneMpiTest(exchange_general.cpp exchange_general GeneralFocusExchange 3)
 addCstoneMpiTest(exchange_domain.cpp exchange_domain GlobalDomainExchange 10)
 addCstoneMpiTest(focus_tree.cpp focus_tree FocusTreeIntregration 10)
 addCstoneMpiTest(domain_nranks.cpp domain_nranks GlobalDomainNRanks 10)
