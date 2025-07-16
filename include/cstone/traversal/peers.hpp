@@ -77,10 +77,23 @@ std::vector<int> findPeersMac(int myRank,
         // node a has to overlap/be contained in the focus, while b must not be inside it
         if (!aFocusOverlap || bInFocus) { return false; }
 
+        #ifdef CSTONE_MIXD
+        auto [aCenter, aSize] = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, a, box);
+        auto [bCenter, bSize] = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, b, box);
+        // std::cout << "aCenter: (" << aCenter[0] << " " << aCenter[1] << " " << aCenter[2] << ") aSize: " << aSize[0]
+        //           << " " << aSize[1] << " " << aSize[2] << std::endl;
+        // std::cout << "bCenter: (" << bCenter[0] << " " << bCenter[1] << " " << bCenter[2] << ") bSize: " << bSize[0]
+        //           << " " << bSize[1] << " " << bSize[2] << std::endl;
+        if ((aSize[0] == 0 && aSize[1] == 0 && aSize[2] == 0) || (bSize[0] == 0 && bSize[1] == 0 && bSize[2] == 0))
+        {
+            return false;
+        }
+        #else
         IBox aBox             = sfcIBox(sfcKey(tree.codeStart(a)), tree.level(a));
         IBox bBox             = sfcIBox(sfcKey(tree.codeStart(b)), tree.level(b));
         auto [aCenter, aSize] = centerAndSize<KeyType>(aBox, box);
         auto [bCenter, bSize] = centerAndSize<KeyType>(bBox, box);
+        #endif
         return !minVecMacMutual(aCenter, aSize, bCenter, bSize, box, invThetaEff);
     };
 
@@ -106,6 +119,12 @@ std::vector<int> findPeersMac(int myRank,
         TreeNodeIndex nodeIdx = locateNode(spanningNodeKeys[i], spanningNodeKeys[i + 1], nodeKeys, levelRange);
         dualTraversal(domainTree, nodeIdx, 0, crossFocusPairs, m2l, p2p);
     }
+    std::cout << "[findPeersMac3] myRank: " << myRank << " peer ranks: ";
+    for (int i = 0; i < int(peerRanks.size()); ++i)
+    {
+        if (peerRanks[i]) { std::cout << i << " "; }
+    }
+    std::cout << std::endl;
 
     std::vector<int> ret;
     for (int i = 0; i < int(peerRanks.size()); ++i)
