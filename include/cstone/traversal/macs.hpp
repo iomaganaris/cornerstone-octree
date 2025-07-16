@@ -58,11 +58,15 @@ HOST_DEVICE_FUN inline float invThetaVecMac(float theta) { return 1.0f / theta +
 template<class T, class KeyType>
 HOST_DEVICE_FUN Vec4<T> computeMinMacR2(KeyType prefix, float invThetaEff, const Box<T>& box)
 {
+    #ifdef CSTONE_MIXD
+    auto [geoCenter, geoSize] = getCenterSizeMixD<KeyType>(prefix, box);
+    #else
     KeyType nodeKey  = decodePlaceholderBit(prefix);
     int prefixLength = decodePrefixLength(prefix);
 
     IBox cellBox              = sfcIBox(sfcKey(nodeKey), prefixLength / 3);
     auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    #endif
 
     T l   = T(2) * max(geoSize);
     T mac = l * invThetaEff;
@@ -252,16 +256,32 @@ void markMacs(const KeyType* prefixes,
     KeyType focusStart = focusNodes[0];
     KeyType focusEnd   = focusNodes[numFocusNodes];
 
+    #ifdef CSTONE_MIXD
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    #endif
+
 #pragma omp parallel for schedule(dynamic)
     for (TreeNodeIndex i = 0; i < numFocusNodes; ++i)
     {
+        #ifdef CSTONE_MIXD
+        unsigned level              = decodePrefixLength(focusNodes[i]) / 3;
+        unsigned level_key          = octalDigit(focusNodes[i], level);
+        const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
+        IBox target = sfcIBox(sfcMixDKey<KeyType>(focusNodes[i]), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        #else
         IBox target    = sfcIBox(sfcKey(focusNodes[i]), sfcKey(focusNodes[i + 1]));
+        #endif
         IBox targetExt = IBox(target.xmin() - 1, target.xmax() + 1, target.ymin() - 1, target.ymax() + 1,
                               target.zmin() - 1, target.zmax() + 1);
         if (containedIn(focusStart, focusEnd, targetExt)) { continue; }
 
+        #ifdef CSTONE_MIXD
+        auto [targetCenter, targetSize] = getCenterSizeMixD<KeyType>(focusNodes[i], box);
+        unsigned maxLevel               = std::max({mixDBits.bx, mixDBits.by, mixDBits.bz});
+        #else
         auto [targetCenter, targetSize] = centerAndSize<KeyType>(target, box);
         unsigned maxLevel               = maxTreeLevel<KeyType>{};
+        #endif
         if (limitSource) { maxLevel = std::max(int(treeLevel(focusNodes[i + 1] - focusNodes[i])) - 1, 0); }
         markMacPerBox(targetCenter, targetSize, maxLevel, prefixes, childOffsets, centers, box, focusStart, focusEnd,
                       markings);
