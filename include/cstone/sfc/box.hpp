@@ -473,6 +473,7 @@ AxisMixDBits getBoxMixDimensionBits(const BoxType& box) {
     AxisMixDBits bit_limits;
 
     for (int i = 0; i < 3; ++i) {
+        // const auto bits = boxDimensions[i] == max_dim_value ? static_cast<int>(std::ceil(std::log2(max_dim_value))) : static_cast<int>(std::ceil(std::log2(max_dim_value))) - static_cast<int>(std::ceil(std::log2(max_dim_value / boxDimensions[i])));
         const auto bits = boxDimensions[i] == max_dim_value ? maxTreeLevel<KeyType>{} : maxTreeLevel<KeyType>{} - static_cast<int>(std::ceil(std::log2(max_dim_value / boxDimensions[i])));
         if (i == 0) bit_limits.bx = bits;
         else if (i == 1) bit_limits.by = bits;

@@ -46,6 +46,15 @@ IBox makeLevelBox(unsigned ix, unsigned iy, unsigned iz, unsigned level)
 }
 
 template<class KeyType>
+IBox makeLevelBoxMixD(unsigned ix, unsigned iy, unsigned iz, unsigned level, unsigned bx, unsigned by, unsigned bz)
+{
+    unsigned Lx = 1u << std::min(maxTreeLevel<KeyType>{} - level, bx);
+    unsigned Ly = 1u << std::min(maxTreeLevel<KeyType>{} - level, by);
+    unsigned Lz = 1u << std::min(maxTreeLevel<KeyType>{} - level, bz);
+    return IBox(ix * Lx, ix * Lx + Lx, iy * Ly, iy * Ly + Ly, iz * Lz, iz * Lz + Lz);
+}
+
+template<class KeyType>
 void surfaceDetection()
 {
     unsigned level            = 2;
@@ -106,7 +115,7 @@ void surfaceDetectionMixDUniform()
     IBox targetBox = makeLevelBox<KeyType>(0, 0, 1, level);
     const auto mixDBits = getBoxMixDimensionBits<int, KeyType, IBox>(targetBox);
 
-    std::vector<KeyType> tree = makeUniformNLevelMixDTree<KeyType>(64, 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    std::vector<KeyType> tree = makeUniformNLevelTree<KeyType>(64, 1);
 
     Octree<KeyType> fullTree;
     fullTree.update(tree.data(), nNodes(tree));
@@ -150,6 +159,64 @@ TEST(Traversal, surfaceDetectionMixD)
 {
     surfaceDetectionMixDUniform<unsigned>();
     surfaceDetectionMixDUniform<uint64_t>();
+}
+
+template<class KeyType>
+void surfaceDetectionMixDNonUniform()
+{
+    IBox targetBox{0, 512, 0, 8, 0, 2};
+    const auto mixDBits = getBoxMixDimensionBits<int, KeyType, IBox>(targetBox);
+
+    std::vector<KeyType> tree = makeUniformNLevelTree<KeyType>(256, 1);
+
+    Octree<KeyType> fullTree;
+    fullTree.update(tree.data(), nNodes(tree));
+
+    std::vector<IBox> treeBoxes(fullTree.numTreeNodes());
+    for (TreeNodeIndex i = 0; i < fullTree.numTreeNodes(); ++i)
+    {
+        treeBoxes[i] = sfcIBox(sfcMixDKey(fullTree.codeStart(i)), maxTreeLevel<KeyType>() - fullTree.level(i), mixDBits.bx, mixDBits.by, mixDBits.bz);
+    }
+
+    auto isSurface = [targetBox, bbox = Box<double>(0, 1), boxes = treeBoxes.data(), mixDBits](TreeNodeIndex idx)
+    {
+        double distance = minDistanceSq<KeyType>(targetBox, boxes[idx], bbox, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        return distance == 0.0;
+    };
+
+    std::vector<IBox> surfaceBoxes;
+    auto saveBox = [numInternalNodes = fullTree.numInternalNodes(), &surfaceBoxes, &treeBoxes](TreeNodeIndex idx)
+    { if (treeBoxes[idx] != IBox(0, 0, 0, 0, 0, 0)) { surfaceBoxes.push_back(treeBoxes[idx]); } };
+
+    singleTraversal(fullTree.childOffsets().data(), isSurface, saveBox);
+
+    std::sort(begin(surfaceBoxes), end(surfaceBoxes));
+
+    // HilbertMixD node indices at surface: {0, 1, 2, 3, 4};
+
+    // coordinates of 3D-node boxes that touch targetBox
+    std::vector<IBox> reference;
+    if constexpr (std::is_same_v<KeyType, unsigned>)
+    {
+        reference = {
+            makeLevelBoxMixD<KeyType>(0, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz),
+            makeLevelBoxMixD<KeyType>(1, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz),
+            makeLevelBoxMixD<KeyType>(2, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz),
+            makeLevelBoxMixD<KeyType>(3, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz),
+            makeLevelBoxMixD<KeyType>(4, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz)
+        };
+    } else {
+        reference = {makeLevelBoxMixD<KeyType>(0, 0, 0, 3, mixDBits.bx, mixDBits.by, mixDBits.bz)};
+    }
+
+    std::sort(begin(reference), end(reference));
+    EXPECT_EQ(surfaceBoxes, reference);
+}
+
+TEST(Traversal, surfaceDetectionMixDNonUniform)
+{
+    surfaceDetectionMixDNonUniform<unsigned>();
+    surfaceDetectionMixDNonUniform<uint64_t>();
 }
 
 //! @brief mac criterion refines all nodes, traverses the entire tree and finds all leaf-pairs
