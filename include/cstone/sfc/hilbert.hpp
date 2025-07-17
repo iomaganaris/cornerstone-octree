@@ -453,9 +453,39 @@ HOST_DEVICE_FUN IBox hilbertIBoxKeys(KeyType keyStart, KeyType keyEnd) noexcept
     return hilbertIBox(keyStart, treeLevel(keyEnd - keyStart));
 }
 
+template<class KeyType>
+HOST_DEVICE_FUN bool isValidHilbertMixDKey(KeyType key, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    std::array<unsigned, 3> bits{bx, by, bz};
+    std::sort(bits.begin(), bits.end());
+    for (unsigned i{1}; i <= maxTreeLevel<KeyType>(); ++i)
+    {
+        const auto shifted_key = key >> (3 * (i - 1));
+        const auto last_key_digit_of_shifted_key = shifted_key & 7u;
+        if (i <= bits[0])
+        {
+            continue;
+        }
+        else if (i <= bits[1])
+        {
+            if (last_key_digit_of_shifted_key > 3u) {
+                return false;
+            }
+        }
+        else if (i <= bits[2])
+        {
+            if (last_key_digit_of_shifted_key > 1u) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 /*! @brief compute the 3D integer coordinate box that contains the key range
  *
  * @tparam KeyType   32- or 64-bit unsigned integer
+ * @param  level     level from the right
  * @param  keyStart  lower Hilbert key
  * @param  keyEnd    upper Hilbert key
  * @return           the integer box that contains the given key range
@@ -480,6 +510,11 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned 
     // std::cout << "[hilbertMixDIBox] level: " << level << std::endl;
     // std::cout << "[hilbertMixDIBox] bx: " << bx << " by: " << by << " bz: " << bz << std::endl;
     assert(level <= maxTreeLevel<KeyType>{});
+    auto is_valid_key = isValidHilbertMixDKey(keyStart, bx, by, bz);
+    if (!is_valid_key)
+    {
+        return IBox(0, 0, 0, 0, 0, 0); // return empty box
+    }
     unsigned cubeLengthX = 1u << std::min(bx, level);
     unsigned cubeLengthY = 1u << std::min(by, level);
     unsigned cubeLengthZ = 1u << std::min(bz, level);
@@ -487,10 +522,13 @@ HOST_DEVICE_FUN IBox hilbertMixDIBox(KeyType keyStart, unsigned level, unsigned 
     unsigned maskY       = ~(cubeLengthY - 1);
     unsigned maskZ       = ~(cubeLengthZ - 1);
     auto [ix, iy, iz]    = decodeHilbertMixD<KeyType>(keyStart, bx, by, bz);
-    // std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ
-    //   << std::endl;
+
+    // std::cout << "cubeLengthX: " << cubeLengthX << " cubeLengthY: " << cubeLengthY << " cubeLengthZ: " << cubeLengthZ << std::endl;
     // std::cout << "cubeLength: " << cubeLength << std::endl;
     // std::cout << "mask: " << std::bitset<32>(mask) << std::endl;
+    // std::cout << "[hilbertMixDIBox] [before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy
+    //           << " iz (octal): " << iz << std::dec << std::endl;
+    // std::cout << "[hilbertMixDIBox] maskX: " << std::oct << maskX << " maskY: " << std::oct << maskY << " maskZ: " << std::oct << maskZ << std::dec << std::endl;
     // std::cout << "[before mask] ix (octal): " << std::oct << ix << " iy (octal): " << iy << " iz (octal): " << iz
     //   << std::dec << std::endl;
 
