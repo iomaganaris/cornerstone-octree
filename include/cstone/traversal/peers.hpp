@@ -84,6 +84,7 @@ std::vector<int> findPeersMac(int myRank,
         //           << " " << aSize[1] << " " << aSize[2] << std::endl;
         // std::cout << "bCenter: (" << bCenter[0] << " " << bCenter[1] << " " << bCenter[2] << ") bSize: " << bSize[0]
         //           << " " << bSize[1] << " " << bSize[2] << std::endl;
+        // TODO(iomaganaris): Does the following optimization make sense?
         if ((aSize[0] == 0 && aSize[1] == 0 && aSize[2] == 0) || (bSize[0] == 0 && bSize[1] == 0 && bSize[2] == 0))
         {
             return false;
