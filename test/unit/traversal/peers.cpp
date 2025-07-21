@@ -46,24 +46,46 @@ static std::vector<int> findPeersAll2All(int myRank,
                                          const Box<T>& box,
                                          float invThetaEff)
 {
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
+    const bool mixD = mixDBits.bx != maxTreeLevel<KeyType>{} ||
+        mixDBits.by != maxTreeLevel<KeyType>{} ||
+        mixDBits.bz != maxTreeLevel<KeyType>{};
+
     TreeNodeIndex firstIdx = findNodeAbove(tree.data(), nNodes(tree), assignment[myRank]);
     TreeNodeIndex lastIdx  = findNodeAbove(tree.data(), nNodes(tree), assignment[myRank + 1]);
+    std::cout << "myRank: " << myRank << ", firstIdx: " << firstIdx << ", lastIdx: " << lastIdx << std::endl;
 
     std::vector<Vec3<T>> boxCenter(nNodes(tree));
     std::vector<Vec3<T>> boxSize(nNodes(tree));
     for (TreeNodeIndex i = 0; i < TreeNodeIndex(nNodes(tree)); ++i)
     {
-        IBox ibox                          = sfcIBox(sfcKey(tree[i]), sfcKey(tree[i + 1]));
+        IBox ibox                          = mixD ? sfcIBox(sfcMixDKey(tree[i]), sfcMixDKey(tree[i + 1]), mixDBits.bx, mixDBits.by, mixDBits.bz) : sfcIBox(sfcKey(tree[i]), sfcKey(tree[i + 1]));
         std::tie(boxCenter[i], boxSize[i]) = centerAndSize<KeyType>(ibox, box);
+        std::cout << "boxCenter[" << i << "]: " << boxCenter[i][0] << " " << boxCenter[i][1] << " " << boxCenter[i][2]
+                  << " boxSize: " << boxSize[i][0] << " " << boxSize[i][1] << " " << boxSize[i][2] << std::endl;
     }
 
     std::vector<int> peers(assignment.numRanks());
-    for (TreeNodeIndex i = firstIdx; i < lastIdx; ++i)
-        for (TreeNodeIndex j = 0; j < TreeNodeIndex(nNodes(tree)); ++j)
-            if (!minVecMacMutual(boxCenter[i], boxSize[i], boxCenter[j], boxSize[j], box, invThetaEff))
-            {
+    for (TreeNodeIndex i = firstIdx; i < lastIdx; ++i) {
+        if (mixD && (boxSize[i][0] == 0 && boxSize[i][1] == 0 && boxSize[i][2] == 0)) {
+            continue; // skip empty boxes
+        }
+        for (TreeNodeIndex j = 0; j < TreeNodeIndex(nNodes(tree)); ++j) {
+            std::cout << "Checking box " << i << " against " << j << std::endl;
+            if (mixD && (boxSize[j][0] == 0 && boxSize[j][1] == 0 && boxSize[j][2] == 0)) {
+                std::cout << "Skipping empty box " << j << std::endl;
+                continue; // skip empty boxes
+            }
+            std::cout << "boxCenter[i]: " << boxCenter[i][0] << " " << boxCenter[i][1] << " " << boxCenter[i][2]
+                      << ", boxSize[i]: " << boxSize[i][0] << " " << boxSize[i][1] << " " << boxSize[i][2] << std::endl;
+            std::cout << "boxCenter[j]: " << boxCenter[j][0] << " " << boxCenter[j][1] << " " << boxCenter[j][2]
+                      << ", boxSize[j]: " << boxSize[j][0] << " " << boxSize[j][1] << " " << boxSize[j][2] << std::endl;
+            std::cout << "minVecMacMutual: " << minVecMacMutual(boxCenter[i], boxSize[i], boxCenter[j], boxSize[j], box, invThetaEff) << std::endl;
+            if (!minVecMacMutual(boxCenter[i], boxSize[i], boxCenter[j], boxSize[j], box, invThetaEff)) {
                 peers[assignment.findRank(tree[j])] = 1;
             }
+        }
+    }
 
     std::vector<int> ret;
     for (int i = 0; i < int(peers.size()); ++i)
@@ -73,9 +95,8 @@ static std::vector<int> findPeersAll2All(int myRank,
 }
 
 template<class KeyType>
-static void findMacPeers64grid(int rank, float theta, BoundaryType pbc, int /*refNumPeers*/)
+static void findMacPeers64grid(int rank, Box<double> box, float theta, int /*refNumPeers*/)
 {
-    Box<double> box{-1, 1, pbc};
     Octree<KeyType> octree;
     auto leaves = makeUniformNLevelTree<KeyType>(64, 1);
     octree.update(leaves.data(), nNodes(leaves));
@@ -96,21 +117,27 @@ static void findMacPeers64grid(int rank, float theta, BoundaryType pbc, int /*re
 TEST(Peers, findMacGrid64)
 {
     // just the surface
-    findMacPeers64grid<unsigned>(0, 1.1, BoundaryType::open, 7);
-    findMacPeers64grid<uint64_t>(0, 1.1, BoundaryType::open, 7);
+    findMacPeers64grid<unsigned>(0, Box<double>{-1, 1, BoundaryType::open}, 1.1, 7);
+    findMacPeers64grid<uint64_t>(0, Box<double>{-1, 1, BoundaryType::open}, 1.1, 7);
+    findMacPeers64grid<unsigned>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::open}, 1.1, 7);
+    findMacPeers64grid<uint64_t>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::open}, 1.1, 7);
 }
 
 TEST(Peers, findMacGrid64Narrow)
 {
-    findMacPeers64grid<unsigned>(0, 1.0, BoundaryType::open, 19);
-    findMacPeers64grid<uint64_t>(0, 1.0, BoundaryType::open, 19);
+    findMacPeers64grid<unsigned>(0, Box<double>{-1, 1, BoundaryType::open}, 1.0, 19);
+    findMacPeers64grid<uint64_t>(0, Box<double>{-1, 1, BoundaryType::open}, 1.0, 19);
+    findMacPeers64grid<unsigned>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::open}, 1.0, 19);
+    findMacPeers64grid<uint64_t>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::open}, 1.0, 19);
 }
 
 TEST(Peers, findMacGrid64PBC)
 {
     // just the surface + PBC, 26 six peers at the surface
-    findMacPeers64grid<unsigned>(0, 1.1, BoundaryType::periodic, 26);
-    findMacPeers64grid<uint64_t>(0, 1.1, BoundaryType::periodic, 26);
+    findMacPeers64grid<unsigned>(0, Box<double>{-1, 1, BoundaryType::periodic}, 1.1, 26);
+    findMacPeers64grid<uint64_t>(0, Box<double>{-1, 1, BoundaryType::periodic}, 1.1, 26);
+    findMacPeers64grid<unsigned>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::periodic}, 1.1, 26);
+    findMacPeers64grid<uint64_t>(0, Box<double>{0, 1, 0, 0.015625, 0, 0.00390625, BoundaryType::periodic}, 1.1, 26);
 }
 
 template<class KeyType>
