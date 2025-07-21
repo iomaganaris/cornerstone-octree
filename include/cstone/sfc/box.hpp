@@ -337,6 +337,13 @@ using FBox = SimpleBox<T>;
 template<class KeyType, class T>
 constexpr HOST_DEVICE_FUN util::tuple<Vec3<T>, Vec3<T>> centerAndSize(const IBox& ibox, const Box<T>& box)
 {
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
+    if (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+        mixDBits.by != maxTreeLevel<KeyType>{} ||
+        mixDBits.bz != maxTreeLevel<KeyType>{})
+    {
+        return centerAndSize<KeyType>(ibox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    }
     constexpr int maxCoord = 1u << maxTreeLevel<KeyType>{};
     // smallest octree cell edge length in unit cube
     constexpr T uL = T(1.) / maxCoord;

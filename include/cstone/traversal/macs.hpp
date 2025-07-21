@@ -264,10 +264,7 @@ void markMacs(const KeyType* prefixes,
     for (TreeNodeIndex i = 0; i < numFocusNodes; ++i)
     {
         #ifdef CSTONE_MIXD
-        unsigned level              = decodePrefixLength(focusNodes[i]) / 3;
-        unsigned level_key          = octalDigit(focusNodes[i], level);
-        const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
-        IBox target = sfcIBox(sfcMixDKey<KeyType>(focusNodes[i]), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        IBox target    = sfcIBox(sfcMixDKey(focusNodes[i]), sfcMixDKey(focusNodes[i + 1]), mixDBits.bx, mixDBits.by, mixDBits.bz);
         #else
         IBox target    = sfcIBox(sfcKey(focusNodes[i]), sfcKey(focusNodes[i + 1]));
         #endif

@@ -279,110 +279,110 @@ TEST(GeneralFocusExchange, randomGaussian)
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
     generalExchangeRandomGaussian<unsigned, double>(rank, nRanks);
-    // generalExchangeRandomGaussian<uint64_t, double>(rank, nRanks);
-    // generalExchangeRandomGaussian<unsigned, float>(rank, nRanks);
-    // generalExchangeRandomGaussian<uint64_t, float>(rank, nRanks);
+    generalExchangeRandomGaussian<uint64_t, double>(rank, nRanks);
+    generalExchangeRandomGaussian<unsigned, float>(rank, nRanks);
+    generalExchangeRandomGaussian<uint64_t, float>(rank, nRanks);
 }
 
-// template<class KeyType, class T>
-// static void generalExchangeSourceCenter(int thisRank, int numRanks)
-// {
-//     const LocalIndex numParticles = 1000;
-//     unsigned bucketSize           = 64;
-//     unsigned bucketSizeLocal      = 16;
-//     float theta                   = 10.0;
-//     float invThetaEff             = invThetaMinMac(theta);
+template<class KeyType, class T>
+static void generalExchangeSourceCenter(int thisRank, int numRanks)
+{
+    const LocalIndex numParticles = 1000;
+    unsigned bucketSize           = 64;
+    unsigned bucketSizeLocal      = 16;
+    float theta                   = 10.0;
+    float invThetaEff             = invThetaMinMac(theta);
 
-//     #ifdef CSTONE_MIXD
-//     Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
-//     const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
-//     #else
-//     Box<T> box{-1, 1};
-//     #endif
+    #ifdef CSTONE_MIXD
+    Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
+    const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
+    #else
+    Box<T> box{-1, 1};
+    #endif
 
-//     /*******************************/
-//     /* identical data on all ranks */
+    /*******************************/
+    /* identical data on all ranks */
 
-//     // common pool of coordinates, identical on all ranks
-//     #ifdef CSTONE_MIXD
-//     RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by,
-//                                                               mixDBits.bz);
-//     #else
-//     RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box);
-//     #endif
-//     std::vector<T> globalMasses(numRanks * numParticles, 1.0 / (numRanks * numParticles));
+    // common pool of coordinates, identical on all ranks
+    #ifdef CSTONE_MIXD
+    RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by,
+                                                              mixDBits.bz);
+    #else
+    RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box);
+    #endif
+    std::vector<T> globalMasses(numRanks * numParticles, 1.0 / (numRanks * numParticles));
 
-//     auto [tree, counts] = computeOctree(coords.particleKeys().data(),
-//                                         coords.particleKeys().data() + coords.particleKeys().size(), bucketSize);
+    auto [tree, counts] = computeOctree(coords.particleKeys().data(),
+                                        coords.particleKeys().data() + coords.particleKeys().size(), bucketSize);
 
-//     Octree<KeyType> domainTree;
-//     domainTree.update(tree.data(), nNodes(tree));
+    Octree<KeyType> domainTree;
+    domainTree.update(tree.data(), nNodes(tree));
 
-//     auto assignment = makeSfcAssignment(numRanks, counts, tree.data());
+    auto assignment = makeSfcAssignment(numRanks, counts, tree.data());
 
-//     /*******************************/
+    /*******************************/
 
-//     auto peers = findPeersMac(thisRank, assignment, domainTree, box, invThetaEff);
+    auto peers = findPeersMac(thisRank, assignment, domainTree, box, invThetaEff);
 
-//     KeyType focusStart = assignment[thisRank];
-//     KeyType focusEnd   = assignment[thisRank + 1];
+    KeyType focusStart = assignment[thisRank];
+    KeyType focusEnd   = assignment[thisRank + 1];
 
-//     // locate particles assigned to thisRank
-//     auto firstAssignedIndex = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), focusStart);
-//     auto lastAssignedIndex  = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), focusEnd);
+    // locate particles assigned to thisRank
+    auto firstAssignedIndex = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), focusStart);
+    auto lastAssignedIndex  = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), focusEnd);
 
-//     // extract a slice of the common pool, each rank takes a different slice, but all slices together
-//     // are equal to the common pool
-//     std::vector<T> x(coords.x().begin() + firstAssignedIndex, coords.x().begin() + lastAssignedIndex);
-//     std::vector<T> y(coords.y().begin() + firstAssignedIndex, coords.y().begin() + lastAssignedIndex);
-//     std::vector<T> z(coords.z().begin() + firstAssignedIndex, coords.z().begin() + lastAssignedIndex);
-//     std::vector<T> m(globalMasses.begin() + firstAssignedIndex, globalMasses.begin() + lastAssignedIndex);
+    // extract a slice of the common pool, each rank takes a different slice, but all slices together
+    // are equal to the common pool
+    std::vector<T> x(coords.x().begin() + firstAssignedIndex, coords.x().begin() + lastAssignedIndex);
+    std::vector<T> y(coords.y().begin() + firstAssignedIndex, coords.y().begin() + lastAssignedIndex);
+    std::vector<T> z(coords.z().begin() + firstAssignedIndex, coords.z().begin() + lastAssignedIndex);
+    std::vector<T> m(globalMasses.begin() + firstAssignedIndex, globalMasses.begin() + lastAssignedIndex);
 
-//     // Now build the focused tree using distributed algorithms. Each rank only uses its slice.
-//     std::vector<KeyType> particleKeys(lastAssignedIndex - firstAssignedIndex);
-//     #ifdef CSTONE_MIXD
-//     computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
-//                        mixDBits.bx, mixDBits.by, mixDBits.bz);
-//     #else
-//     computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
-//     #endif
+    // Now build the focused tree using distributed algorithms. Each rank only uses its slice.
+    std::vector<KeyType> particleKeys(lastAssignedIndex - firstAssignedIndex);
+    #ifdef CSTONE_MIXD
+    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
+                       mixDBits.bx, mixDBits.by, mixDBits.bz);
+    #else
+    computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
+    #endif
 
-//     FocusedOctree<KeyType, T> focusTree(thisRank, numRanks, bucketSizeLocal);
-//     focusTree.converge(box, particleKeys, peers, assignment, tree, counts, invThetaEff);
+    FocusedOctree<KeyType, T> focusTree(thisRank, numRanks, bucketSizeLocal);
+    focusTree.converge(box, particleKeys, peers, assignment, tree, counts, invThetaEff);
 
-//     auto octree = focusTree.octreeViewAcc();
+    auto octree = focusTree.octreeViewAcc();
 
-//     focusTree.updateCenters(x.data(), y.data(), z.data(), m.data(), domainTree, box);
-//     auto sourceCenter = focusTree.expansionCentersAcc();
+    focusTree.updateCenters(x.data(), y.data(), z.data(), m.data(), domainTree, box);
+    auto sourceCenter = focusTree.expansionCentersAcc();
 
-//     constexpr T tol = std::is_same_v<T, double> ? 1e-10 : 1e-4;
-//     {
-//         for (TreeNodeIndex i = 0; i < octree.numNodes; ++i)
-//         {
-//             KeyType nodeStart = decodePlaceholderBit(octree.prefixes[i]);
-//             KeyType nodeEnd   = nodeStart + nodeRange<KeyType>(decodePrefixLength(octree.prefixes[i]) / 3);
+    constexpr T tol = std::is_same_v<T, double> ? 1e-10 : 1e-4;
+    {
+        for (TreeNodeIndex i = 0; i < octree.numNodes; ++i)
+        {
+            KeyType nodeStart = decodePlaceholderBit(octree.prefixes[i]);
+            KeyType nodeEnd   = nodeStart + nodeRange<KeyType>(decodePrefixLength(octree.prefixes[i]) / 3);
 
-//             LocalIndex startIndex =
-//                 findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), nodeStart);
-//             LocalIndex endIndex = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), nodeEnd);
+            LocalIndex startIndex =
+                findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), nodeStart);
+            LocalIndex endIndex = findNodeAbove(coords.particleKeys().data(), coords.particleKeys().size(), nodeEnd);
 
-//             SourceCenterType<T> reference = massCenter<T>(coords.x().data(), coords.y().data(), coords.z().data(),
-//                                                           globalMasses.data(), startIndex, endIndex);
+            SourceCenterType<T> reference = massCenter<T>(coords.x().data(), coords.y().data(), coords.z().data(),
+                                                          globalMasses.data(), startIndex, endIndex);
 
-//             EXPECT_NEAR(sourceCenter[i][0], reference[0], tol);
-//             EXPECT_NEAR(sourceCenter[i][1], reference[1], tol);
-//             EXPECT_NEAR(sourceCenter[i][2], reference[2], tol);
-//             EXPECT_NEAR(sourceCenter[i][3], reference[3], tol);
-//         }
-//     }
-// }
+            EXPECT_NEAR(sourceCenter[i][0], reference[0], tol);
+            EXPECT_NEAR(sourceCenter[i][1], reference[1], tol);
+            EXPECT_NEAR(sourceCenter[i][2], reference[2], tol);
+            EXPECT_NEAR(sourceCenter[i][3], reference[3], tol);
+        }
+    }
+}
 
-// TEST(GeneralFocusExchange, sourceCenter)
-// {
-//     int rank = 0, nRanks = 0;
-//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
+TEST(GeneralFocusExchange, sourceCenter)
+{
+    int rank = 0, nRanks = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-//     generalExchangeSourceCenter<uint64_t, double>(rank, nRanks);
-//     generalExchangeSourceCenter<unsigned, float>(rank, nRanks);
-// }
+    generalExchangeSourceCenter<uint64_t, double>(rank, nRanks);
+    generalExchangeSourceCenter<unsigned, float>(rank, nRanks);
+}

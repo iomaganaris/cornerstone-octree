@@ -360,6 +360,13 @@ HOST_DEVICE_FUN inline IBox sfcIBox(KeyType keyStart, KeyType keyEnd) noexcept
     return sfcIBox(keyStart, treeLevel(keyEnd - keyStart));
 }
 
+//! @brief convenience overload
+template<class KeyType>
+HOST_DEVICE_FUN inline IBox sfcIBox(KeyType keyStart, KeyType keyEnd, unsigned bx, unsigned by, unsigned bz) noexcept
+{
+    return sfcIBox(keyStart, maxTreeLevel<KeyType>{} - treeLevel(keyEnd - keyStart), bx, by, bz);
+}
+
 //! @brief Compute the smallest octree node in placeholder-bit format that contains the given floating point box
 template<class KeyType, class T>
 HOST_DEVICE_FUN inline KeyType commonNodePrefix(Vec3<T> center, Vec3<T> size, const cstone::Box<T>& box)
