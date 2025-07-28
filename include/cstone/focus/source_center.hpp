@@ -190,7 +190,7 @@ std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixDTree(TreeType tree, const TreeNodeI
 }
 
 template<class KeyType, class T>
-std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixD(const KeyType& prefix, const Box<T>& box)
+util::tuple<Vec3<T>, Vec3<T>> getCenterSizeMixD(const KeyType& prefix, const Box<T>& box)
 {
     KeyType startKey            = decodePlaceholderBit(prefix);
     unsigned level              = decodePrefixLength(prefix) / 3;
@@ -250,8 +250,8 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes,
         //           << centers[i][2] << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2]
         //           << std::endl;
         const auto centerAndSize = getCenterSizeMixD(prefixes[i], box);
-        centers[i]               = centerAndSize.first;
-        sizes[i]                 = centerAndSize.second;
+        centers[i]               = std::get<0>(centerAndSize);
+        sizes[i]                 = std::get<1>(centerAndSize);
     }
 }
 
