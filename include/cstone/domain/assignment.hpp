@@ -84,16 +84,20 @@ public:
         // compute SFC particle keys only for particles participating in tree build
         gsl::span<KeyType> keyView(particleKeys + bufDesc.start, numParticles);
 
-        #ifdef CSTONE_MIXD
-        std::cout << "[GlobalAssignment][assign] computeSfcMixDKeys" << std::endl;
         const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box_);
-        computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
-                           numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
-        #else
-        // std::cout << "[GlobalAssignment][assign] computeSfcKeys" << std::endl;
-        computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
-                       numParticles, box_);
-        #endif
+        if (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+            mixDBits.by != maxTreeLevel<KeyType>{} ||
+            mixDBits.bz != maxTreeLevel<KeyType>{})
+        {
+            computeSfcMixDKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, SfcMixDKindPointer(keyView.data()),
+                               numParticles, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        }
+        else
+        {
+            std::cout << "[GlobalAssignment][assign] computeSfcKeys" << std::endl;
+            computeSfcKeys(x + bufDesc.start, y + bufDesc.start, z + bufDesc.start, sfcKindPointer(keyView.data()),
+                           numParticles, box_);
+        }
 
         // sort keys and keep track of ordering for later use
         reorderFunctor.setMapFromCodes(keyView.begin(), keyView.end());
@@ -156,15 +160,21 @@ public:
         auto recvStart = domain_exchange::receiveStart(bufDesc, numPresent(), numAssigned());
         auto numRecv   = numAssigned() - numPresent();
 
-        #ifdef CSTONE_MIXD
-        std::cout << "[GlobalAssignment][distribute] computeSfcMixDKeys" << std::endl;
         const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box_);
-        computeSfcMixDKeys(x + recvStart, y + recvStart, z + recvStart, SfcMixDKindPointer(keys + recvStart),
-                           numRecv, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
-        #else
-        std::cout << "[GlobalAssignment][distribute] computeSfcKeys" << std::endl;
-        computeSfcKeys(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv, box_);
-        #endif
+        if (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+            mixDBits.by != maxTreeLevel<KeyType>{} ||
+            mixDBits.bz != maxTreeLevel<KeyType>{})
+        {
+            // std::cout << "[GlobalAssignment][distribute] computeSfcMixDKeys" << std::endl;
+            computeSfcMixDKeys(x + recvStart, y + recvStart, z + recvStart, SfcMixDKindPointer(keys + recvStart),
+                               numRecv, box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
+        }
+        else
+        {
+            // std::cout << "[GlobalAssignment][distribute] computeSfcKeys" << std::endl;
+            computeSfcKeys(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv,
+                           box_);
+        }
         std::make_signed_t<LocalIndex> shifts = -numRecv;
         if (newEnd > bufDesc.end) { shifts = numRecv; }
         reorderFunctor.extendMap(shifts, s1);

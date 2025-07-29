@@ -77,24 +77,31 @@ std::vector<int> findPeersMac(int myRank,
         // node a has to overlap/be contained in the focus, while b must not be inside it
         if (!aFocusOverlap || bInFocus) { return false; }
 
-        #ifdef CSTONE_MIXD
-        auto [aCenter, aSize] = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, a, box);
-        auto [bCenter, bSize] = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, b, box);
-        // std::cout << "aCenter: (" << aCenter[0] << " " << aCenter[1] << " " << aCenter[2] << ") aSize: " << aSize[0]
-        //           << " " << aSize[1] << " " << aSize[2] << std::endl;
-        // std::cout << "bCenter: (" << bCenter[0] << " " << bCenter[1] << " " << bCenter[2] << ") bSize: " << bSize[0]
-        //           << " " << bSize[1] << " " << bSize[2] << std::endl;
-        // TODO(iomaganaris): Does the following optimization make sense?
-        if ((aSize[0] == 0 && aSize[1] == 0 && aSize[2] == 0) || (bSize[0] == 0 && bSize[1] == 0 && bSize[2] == 0))
+        Vec3<T> aCenter, aSize;
+        Vec3<T> bCenter, bSize;
+
+        const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
+        if (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+            mixDBits.by != maxTreeLevel<KeyType>{} ||
+            mixDBits.bz != maxTreeLevel<KeyType>{})
         {
-            return false;
+            std::tie(aCenter, aSize) = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, a, box);
+            std::tie(bCenter, bSize) = getCenterSizeMixDTree<TreeType<KeyType>, KeyType, T>(tree, b, box);
+            // std::cout << "aCenter: (" << aCenter[0] << " " << aCenter[1] << " " << aCenter[2] << ") aSize: " << aSize[0]
+            //           << " " << aSize[1] << " " << aSize[2] << std::endl;
+            // std::cout << "bCenter: (" << bCenter[0] << " " << bCenter[1] << " " << bCenter[2] << ") bSize: " << bSize[0]
+            //           << " " << bSize[1] << " " << bSize[2] << std::endl;
+            // TODO(iomaganaris): Does the following optimization make sense?
+            if ((aSize[0] == 0 && aSize[1] == 0 && aSize[2] == 0) || (bSize[0] == 0 && bSize[1] == 0 && bSize[2] == 0))
+            {
+                return false;
+            }
+        } else {
+            IBox aBox             = sfcIBox(sfcKey(tree.codeStart(a)), tree.level(a));
+            IBox bBox             = sfcIBox(sfcKey(tree.codeStart(b)), tree.level(b));
+            std::tie(aCenter, aSize) = centerAndSize<KeyType>(aBox, box);
+            std::tie(bCenter, bSize) = centerAndSize<KeyType>(bBox, box);
         }
-        #else
-        IBox aBox             = sfcIBox(sfcKey(tree.codeStart(a)), tree.level(a));
-        IBox bBox             = sfcIBox(sfcKey(tree.codeStart(b)), tree.level(b));
-        auto [aCenter, aSize] = centerAndSize<KeyType>(aBox, box);
-        auto [bCenter, bSize] = centerAndSize<KeyType>(bBox, box);
-        #endif
         return !minVecMacMutual(aCenter, aSize, bCenter, bSize, box, invThetaEff);
     };
 

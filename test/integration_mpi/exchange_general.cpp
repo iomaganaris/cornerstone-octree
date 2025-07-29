@@ -53,8 +53,8 @@ using namespace cstone;
  * From the distributed coordinate set, the same focused trees are then built, but with distributed communicating
  * algorithms. This should yield the same tree on each rank as the local case,
  */
-template<class KeyType, class T>
-static void generalExchangeRandomGaussian(int thisRank, int numRanks)
+template<class KeyType, class T, template<class> class sfcKeyType>
+static void generalExchangeRandomGaussian(int thisRank, int numRanks, const Box<T>& box)
 {
     const LocalIndex numParticles = 1000;
     unsigned bucketSize           = 64;
@@ -62,23 +62,20 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
     float theta                   = 10.0;
     float invThetaEff             = invThetaMinMac(theta);
 
-    #ifdef CSTONE_MIXD
-    Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
     const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
-    #else
-    Box<T> box{-1, 1};
-    #endif
+    const bool useMixD = (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+                          mixDBits.by != maxTreeLevel<KeyType>{} ||
+                          mixDBits.bz != maxTreeLevel<KeyType>{});
 
     // ******************************
     // identical data on all ranks
 
     // common pool of coordinates, identical on all ranks
-    #ifdef CSTONE_MIXD
-    RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by,
-                                                              mixDBits.bz);
-    #else
-    RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box);
-    #endif
+    RandomCoordinates<T, sfcKeyType<KeyType>> coords =
+        useMixD
+            ? RandomCoordinates<T, sfcKeyType<KeyType>>{numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by,
+                                                              mixDBits.bz}
+            : RandomCoordinates<T, sfcKeyType<KeyType>>{numRanks * numParticles, box};
 
     auto [tree, counts] = computeOctree(coords.particleKeys().data(),
                                         coords.particleKeys().data() + coords.particleKeys().size(), bucketSize);
@@ -117,12 +114,15 @@ static void generalExchangeRandomGaussian(int thisRank, int numRanks)
 
     // Now build the focused tree using distributed algorithms. Each rank only uses its slice.
     std::vector<KeyType> particleKeys(lastAssignedIndex - firstAssignedIndex);
-    #ifdef CSTONE_MIXD
-    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
-                       mixDBits.bx, mixDBits.by, mixDBits.bz);
-    #else
-    computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
-    #endif
+    if (useMixD)
+    {
+        computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
+                           mixDBits.bx, mixDBits.by, mixDBits.bz);
+    }
+    else
+    {
+        computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
+    }
 
     FocusedOctree<KeyType, T> focusTree(thisRank, numRanks, bucketSizeLocal);
     focusTree.converge(box, particleKeys, peers, assignment, tree, counts, invThetaEff);
@@ -278,14 +278,18 @@ TEST(GeneralFocusExchange, randomGaussian)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-    generalExchangeRandomGaussian<unsigned, double>(rank, nRanks);
-    generalExchangeRandomGaussian<uint64_t, double>(rank, nRanks);
-    generalExchangeRandomGaussian<unsigned, float>(rank, nRanks);
-    generalExchangeRandomGaussian<uint64_t, float>(rank, nRanks);
+    generalExchangeRandomGaussian<unsigned, double, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeRandomGaussian<uint64_t, double, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeRandomGaussian<unsigned, float, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeRandomGaussian<uint64_t, float, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeRandomGaussian<unsigned, double, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
+    generalExchangeRandomGaussian<uint64_t, double, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
+    generalExchangeRandomGaussian<unsigned, float, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
+    generalExchangeRandomGaussian<uint64_t, float, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
 }
 
-template<class KeyType, class T>
-static void generalExchangeSourceCenter(int thisRank, int numRanks)
+template<class KeyType, class T, template<class> class sfcKeyType>
+static void generalExchangeSourceCenter(int thisRank, int numRanks, const Box<T>& box)
 {
     const LocalIndex numParticles = 1000;
     unsigned bucketSize           = 64;
@@ -293,23 +297,20 @@ static void generalExchangeSourceCenter(int thisRank, int numRanks)
     float theta                   = 10.0;
     float invThetaEff             = invThetaMinMac(theta);
 
-    #ifdef CSTONE_MIXD
-    Box<T> box{0, 1, 0, 0.015625, 0, 0.00390625};
     const auto mixDBits = getBoxMixDimensionBits<T, KeyType>(box);
-    #else
-    Box<T> box{-1, 1};
-    #endif
+    const bool useMixD = (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+                          mixDBits.by != maxTreeLevel<KeyType>{} ||
+                          mixDBits.bz != maxTreeLevel<KeyType>{});
 
     /*******************************/
     /* identical data on all ranks */
 
     // common pool of coordinates, identical on all ranks
-    #ifdef CSTONE_MIXD
-    RandomGaussianCoordinates<T, SfcMixDKind<KeyType>> coords(numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by,
-                                                              mixDBits.bz);
-    #else
-    RandomGaussianCoordinates<T, SfcKind<KeyType>> coords(numRanks * numParticles, box);
-    #endif
+    RandomGaussianCoordinates<T, sfcKeyType<KeyType>> coords =
+        useMixD
+            ? RandomGaussianCoordinates<T, sfcKeyType<KeyType>>{numRanks * numParticles, box, 42, mixDBits.bx, mixDBits.by, mixDBits.bz}
+            : RandomGaussianCoordinates<T, sfcKeyType<KeyType>>{numRanks * numParticles, box};
+
     std::vector<T> globalMasses(numRanks * numParticles, 1.0 / (numRanks * numParticles));
 
     auto [tree, counts] = computeOctree(coords.particleKeys().data(),
@@ -340,12 +341,15 @@ static void generalExchangeSourceCenter(int thisRank, int numRanks)
 
     // Now build the focused tree using distributed algorithms. Each rank only uses its slice.
     std::vector<KeyType> particleKeys(lastAssignedIndex - firstAssignedIndex);
-    #ifdef CSTONE_MIXD
-    computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
-                       mixDBits.bx, mixDBits.by, mixDBits.bz);
-    #else
-    computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
-    #endif
+    if (useMixD)
+    {
+        computeSfcMixDKeys(x.data(), y.data(), z.data(), SfcMixDKindPointer(particleKeys.data()), x.size(), box,
+                           mixDBits.bx, mixDBits.by, mixDBits.bz);
+    }
+    else
+    {
+        computeSfcKeys(x.data(), y.data(), z.data(), sfcKindPointer(particleKeys.data()), x.size(), box);
+    }
 
     FocusedOctree<KeyType, T> focusTree(thisRank, numRanks, bucketSizeLocal);
     focusTree.converge(box, particleKeys, peers, assignment, tree, counts, invThetaEff);
@@ -383,6 +387,8 @@ TEST(GeneralFocusExchange, sourceCenter)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
 
-    generalExchangeSourceCenter<uint64_t, double>(rank, nRanks);
-    generalExchangeSourceCenter<unsigned, float>(rank, nRanks);
+    generalExchangeSourceCenter<uint64_t, double, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeSourceCenter<unsigned, float, SfcKind>(rank, nRanks, {-1, 1});
+    generalExchangeSourceCenter<uint64_t, double, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
+    generalExchangeSourceCenter<unsigned, float, SfcMixDKind>(rank, nRanks, {0, 1, 0, 0.015625, 0, 0.00390625});
 }

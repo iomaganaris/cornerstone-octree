@@ -623,15 +623,18 @@ private:
                                  rawPtr(geoSizesAcc_), box_);
         }
         else {
-            #ifdef CSTONE_MIXD
-            // std::cout << "Using MixD for geo centers" << std::endl;
             const auto mixDBits = getBoxMixDimensionBits<RealType, KeyType, Box<RealType>>(box_);
-            nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_, mixDBits.bx,
-                                   mixDBits.by, mixDBits.bz);
-            #else
-            // std::cout << "Using 3D for geo centers" << std::endl;
-            nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_);
-            #endif
+            if (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+                mixDBits.by != maxTreeLevel<KeyType>{} ||
+                mixDBits.bz != maxTreeLevel<KeyType>{})
+            {
+                // std::cout << "Using MixD for geo centers" << std::endl;
+                nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_, mixDBits.bx,
+                                       mixDBits.by, mixDBits.bz);
+            } else {
+                // std::cout << "Using 3D for geo centers" << std::endl;
+                nodeFpCenters<KeyType>(treeData_.prefixes, geoCentersAcc_.data(), geoSizesAcc_.data(), box_);
+            }
         }
     }
 
