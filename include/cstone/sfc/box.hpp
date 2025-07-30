@@ -343,7 +343,7 @@ constexpr HOST_DEVICE_FUN util::tuple<Vec3<T>, Vec3<T>> centerAndSize(const IBox
                          mixDBits.bz != maxTreeLevel<KeyType>{}) && !disableMixD;
     if (useMixD)
     {
-        std::cout << "Calling MixD centerAndSize" << std::endl;
+        // std::cout << "Calling MixD centerAndSize" << std::endl;
         return centerAndSize<KeyType>(ibox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
     }
     constexpr int maxCoord = 1u << maxTreeLevel<KeyType>{};

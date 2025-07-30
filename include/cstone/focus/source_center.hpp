@@ -180,27 +180,26 @@ std::pair<Vec3<T>, Vec3<T>> getCenterSizeMixDTree(TreeType tree, const TreeNodeI
 {
     KeyType startKey            = tree.codeStart(node);
     unsigned level              = tree.level(node);
-    unsigned level_key          = octalDigit(startKey, level);
-    const auto level_from_right = maxTreeLevel<KeyType>{} - level + 1;
-    const auto mixDBits        = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
-    unsigned sorted[3] = {mixDBits.bx, mixDBits.by, mixDBits.bz};
-    std::sort(std::begin(sorted), std::end(sorted));
-    auto nodeBox                    = sfcIBox(sfcMixDKey<KeyType>(startKey), level_from_right - 1, mixDBits.bx, mixDBits.by, mixDBits.bz);
-    Vec3<T> center, size;
-    util::tie(center, size) = centerAndSize<KeyType>(nodeBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
-    if (level_from_right > sorted[2] && level_key > 0)
+    const auto mixDBits         = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
+    auto nodeBox                = sfcIBox(sfcMixDKey<KeyType>(startKey), maxTreeLevel<KeyType>{} - level, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    auto [center, size] = centerAndSize<KeyType>(nodeBox, box, mixDBits.bx, mixDBits.by, mixDBits.bz);
+    // if (level_from_right > sorted[2] && level_key > 0)
+    // {
+    //     size = {0, 0, 0};
+    //     tree.setEmpty(node);
+    // }
+    // else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
+    // {
+    //     size = {0, 0, 0};
+    //     tree.setEmpty(node);
+    // }
+    // else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
+    // {
+    //     size = {0, 0, 0};
+    //     tree.setEmpty(node);
+    // }
+    if (size[0] == 0 && size[1] == 0 && size[2] == 0)
     {
-        size = {0, 0, 0};
-        tree.setEmpty(node);
-    }
-    else if (level_from_right <= sorted[2] && level_from_right > sorted[1] && level_key > 1)
-    {
-        size = {0, 0, 0};
-        tree.setEmpty(node);
-    }
-    else if (level_from_right <= sorted[1] && level_from_right > sorted[0] && level_key > 3)
-    {
-        size = {0, 0, 0};
         tree.setEmpty(node);
     }
     return {center, size};
