@@ -44,12 +44,13 @@ static std::vector<int> findPeersAll2All(int myRank,
                                          const SfcAssignment<KeyType>& assignment,
                                          gsl::span<const KeyType> tree,
                                          const Box<T>& box,
-                                         float invThetaEff)
+                                         float invThetaEff,
+                                         const bool disableMixD = false)
 {
     const auto mixDBits = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
-    const bool mixD = mixDBits.bx != maxTreeLevel<KeyType>{} ||
+    const bool mixD = !disableMixD && (mixDBits.bx != maxTreeLevel<KeyType>{} ||
         mixDBits.by != maxTreeLevel<KeyType>{} ||
-        mixDBits.bz != maxTreeLevel<KeyType>{};
+        mixDBits.bz != maxTreeLevel<KeyType>{});
 
     TreeNodeIndex firstIdx = findNodeAbove(tree.data(), nNodes(tree), assignment[myRank]);
     TreeNodeIndex lastIdx  = findNodeAbove(tree.data(), nNodes(tree), assignment[myRank + 1]);
@@ -60,7 +61,7 @@ static std::vector<int> findPeersAll2All(int myRank,
     for (TreeNodeIndex i = 0; i < TreeNodeIndex(nNodes(tree)); ++i)
     {
         IBox ibox                          = mixD ? sfcIBox(sfcMixDKey(tree[i]), sfcMixDKey(tree[i + 1]), mixDBits.bx, mixDBits.by, mixDBits.bz) : sfcIBox(sfcKey(tree[i]), sfcKey(tree[i + 1]));
-        std::tie(boxCenter[i], boxSize[i]) = centerAndSize<KeyType>(ibox, box);
+        std::tie(boxCenter[i], boxSize[i]) = centerAndSize<KeyType>(ibox, box, disableMixD);
         // std::cout << "boxCenter[" << i << "]: " << boxCenter[i][0] << " " << boxCenter[i][1] << " " << boxCenter[i][2]
         //           << " boxSize: " << boxSize[i][0] << " " << boxSize[i][1] << " " << boxSize[i][2] << std::endl;
     }
@@ -141,14 +142,19 @@ TEST(Peers, findMacGrid64PBC)
 }
 
 template<class KeyType>
-static void findPeers(Box<double> box)
+static void findPeers(Box<double> box, const bool disableMixD = false)
 {
     int nParticles    = 100000;
     int bucketSize    = 64;
     int numRanks      = 50;
     float invThetaEff = invThetaVecMac(0.5f);
 
-    auto particleKeys   = makeRandomGaussianKeys<KeyType>(nParticles);
+    const auto mixDBits = getBoxMixDimensionBits<double, KeyType, Box<double>>(box);
+    const bool useMixD = !disableMixD && (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+                          mixDBits.by != maxTreeLevel<KeyType>{} ||
+                          mixDBits.bz != maxTreeLevel<KeyType>{});
+
+    auto particleKeys   = useMixD ? RandomCoordinates<double, SfcMixDKind<KeyType>>(nParticles, box, 42, mixDBits.bx, mixDBits.by, mixDBits.bz).particleKeys() : makeRandomGaussianKeys<KeyType>(nParticles);
     auto [tree, counts] = computeOctree(particleKeys.data(), particleKeys.data() + nParticles, bucketSize);
 
     Octree<KeyType> octree;
