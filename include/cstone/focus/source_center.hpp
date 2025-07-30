@@ -143,7 +143,7 @@ void setMac(gsl::span<const KeyType> nodeKeys,
 
 //! @brief compute geometric node centers based on node SFC keys and the global bounding box
 template<class KeyType, class T>
-void nodeFpCenters(gsl::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>* sizes, const Box<T>& box)
+void nodeFpCenters(gsl::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>* sizes, const Box<T>& box, const bool disableMixD = false)
 {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < prefixes.size(); ++i)
@@ -151,8 +151,25 @@ void nodeFpCenters(gsl::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>*
         KeyType prefix                  = prefixes[i];
         KeyType startKey                = decodePlaceholderBit(prefix);
         unsigned level                  = decodePrefixLength(prefix) / 3;
-        auto nodeBox                    = sfcIBox(sfcKey(startKey), level);
-        util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box);
+        const auto mixDBits        = getBoxMixDimensionBits<T, KeyType, Box<T>>(box);
+        const bool isMixD = (mixDBits.bx != maxTreeLevel<KeyType>{} ||
+                        mixDBits.by != maxTreeLevel<KeyType>{} ||
+                        mixDBits.bz != maxTreeLevel<KeyType>{}) && !disableMixD;
+        IBox nodeBox;
+        if (isMixD)
+        {
+            std::cout << "[nodeFpCenters] USING MIXD" << std::endl;
+            nodeBox = sfcIBox(sfcMixDKey<KeyType>(startKey),
+                              maxTreeLevel<KeyType>{} - level,
+                              mixDBits.bx,
+                              mixDBits.by,
+                              mixDBits.bz);
+        }
+        else
+        {
+            nodeBox = sfcIBox(sfcKey(startKey), level);
+        }
+        util::tie(centers[i], sizes[i]) = centerAndSize<KeyType>(nodeBox, box, disableMixD);
         // std::cout << "[nodeFpCenters3D] Center: " << centers[i][0] << ", " << centers[i][1] << ", " << centers[i][2]
         //           << " Size: " << sizes[i][0] << ", " << sizes[i][1] << ", " << sizes[i][2] << std::endl;
     }

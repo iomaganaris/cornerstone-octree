@@ -102,7 +102,7 @@ void neighborCheck(const Coordinates& coords, T radius, const Box<T>& box)
     }
     std::cout << "number_of_non_zero_leaves = " << number_of_non_zero_leaves << std::endl;
     std::vector<Vec3<T>> centers(octree.numNodes), sizes(octree.numNodes);
-    nodeFpCenters<KeyType>(nodeKeys, centers.data(), sizes.data(), box);
+    nodeFpCenters<KeyType>(nodeKeys, centers.data(), sizes.data(), box, true);
 
     OctreeNsView<T, KeyType> nsView{octree.numLeafNodes,
                                     octree.prefixes.data(),
