@@ -142,7 +142,6 @@ void nodeFpCenters(std::span<const KeyType> prefixes, Vec3<T>* centers, Vec3<T>*
         IBox nodeBox;
         if (isMixD)
         {
-            std::cout << "[nodeFpCenters] USING MIXD" << std::endl;
             nodeBox = sfcIBox(sfcMixDKey<KeyType>(startKey),
                               maxTreeLevel<KeyType>{} - level,
                               mixDBits.bx,
@@ -219,7 +218,7 @@ util::tuple<Vec3<T>, Vec3<T>> getCenterSizeMixD(const KeyType& prefix, const Box
 
 //! @brief compute geometric node centers based on node MixD SFC keys and the global bounding box
 template<class KeyType, class T>
-void nodeFpCenters(gsl::span<const KeyType> prefixes,
+void nodeFpCenters(std::span<const KeyType> prefixes,
                    Vec3<T>* centers,
                    Vec3<T>* sizes,
                    const Box<T>& box,

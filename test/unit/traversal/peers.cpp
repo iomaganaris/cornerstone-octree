@@ -56,11 +56,17 @@ static std::vector<int> findPeersAll2All(int myRank,
     std::vector<int> peers(assignment.numRanks());
     for (TreeNodeIndex i = firstIdx; i < lastIdx; ++i)
     {
-        if (mixD && (boxes[i].lx() == 0 && boxes[i].ly() == 0 && boxes[i].lz() == 0)){
+        if (mixD && (boxes[i].xmax() - boxes[i].xmin() == 0 &&
+                     boxes[i].ymax() - boxes[i].ymin() == 0 &&
+                     boxes[i].zmax() - boxes[i].zmin() == 0))
+        {
             continue; // skip empty boxes
         }
         for (TreeNodeIndex j = 0; j < TreeNodeIndex(nNodes(tree)); ++j) {
-            if (mixD && (boxes[j].lx() == 0 && boxes[j].ly() == 0 && boxes[j].lz() == 0)) {
+            if (mixD && (boxes[j].xmax() - boxes[j].xmin() == 0 &&
+                         boxes[j].ymax() - boxes[j].ymin() == 0 &&
+                         boxes[j].zmax() - boxes[j].zmin() == 0))
+            {
                 continue; // skip empty boxes
             }
             if (!minMacMutualInt(boxes[i], boxes[j], ellipse, pbc)) { peers[assignment.findRank(tree[j])] = 1; }

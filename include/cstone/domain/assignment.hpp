@@ -192,7 +192,7 @@ public:
             mixDBits.by != maxTreeLevel<KeyType>{} ||
             mixDBits.bz != maxTreeLevel<KeyType>{})
         {
-            computeSfcMixDKeys<gpu>(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv,
+            computeSfcMixDKeys<gpu>(x + recvStart, y + recvStart, z + recvStart, SfcMixDKindPointer(keys + recvStart), numRecv,
                                 box_, mixDBits.bx, mixDBits.by, mixDBits.bz);
         } else {
             computeSfcKeys<gpu>(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv,

@@ -120,7 +120,7 @@ void surfaceDetectionMixDUniform()
     auto saveBox = [numInternalNodes = fullTree.numInternalNodes(), &surfaceBoxes, &treeBoxes](TreeNodeIndex idx)
     { surfaceBoxes.push_back(treeBoxes[idx]); };
 
-    singleTraversal(fullTree.childOffsets().data(), isSurface, saveBox);
+    singleTraversal(fullTree.childOffsets().data(), fullTree.parents().data(), isSurface, saveBox);
 
     std::sort(begin(surfaceBoxes), end(surfaceBoxes));
 
@@ -172,7 +172,7 @@ void surfaceDetectionMixDNonUniform()
     auto saveBox = [numInternalNodes = fullTree.numInternalNodes(), &surfaceBoxes, &treeBoxes](TreeNodeIndex idx)
     { if (treeBoxes[idx] != IBox(0, 0, 0, 0, 0, 0)) { surfaceBoxes.push_back(treeBoxes[idx]); } };
 
-    singleTraversal(fullTree.childOffsets().data(), isSurface, saveBox);
+    singleTraversal(fullTree.childOffsets().data(), fullTree.parents().data(), isSurface, saveBox);
 
     std::sort(begin(surfaceBoxes), end(surfaceBoxes));
 

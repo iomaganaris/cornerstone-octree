@@ -185,7 +185,7 @@ TEST(Macs, markMacVector)
     markMacVector<uint64_t>(Box<double>{0, 1, 0, 0.015625, 0, 0.00390625});
 }
 
-void limitSource4x4(Box<double> box, const std::vector<uint8_t>& macRef, unsigned numMacsRef) {
+void limitSource4x4(Box<double> box, std::vector<uint8_t> macRef, unsigned numMacsRef) {
     using KeyType = uint64_t;
     using T       = double;
 

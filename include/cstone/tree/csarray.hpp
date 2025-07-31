@@ -440,14 +440,6 @@ std::tuple<std::vector<KeyType>, std::vector<unsigned>> computeOctree(
     return std::make_tuple(std::move(tree), std::move(counts));
 }
 
-//! @brief Convenience wrapper for updateOctree. Start from scratch and return a fully converged cornerstone tree.
-template<class KeyType>
-std::tuple<std::vector<KeyType>, std::vector<unsigned>> computeOctree(
-    std::span<const KeyType> keys, unsigned bucketSize, unsigned maxCount = std::numeric_limits<unsigned>::max())
-{
-    return computeOctree(keys.data(), keys.data() + keys.size(), bucketSize, maxCount);
-}
-
 /*! @brief update a treelet (sub-octree not spanning full SFC) based on node counts
  *
  * @tparam     KeyType       32- or 64-bit unsigned integer for SFC code

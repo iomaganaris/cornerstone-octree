@@ -129,17 +129,8 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
     std::vector<LocalIndex> neighborsProbe(n * ngmax);
     std::vector<unsigned> neighborsCountProbe(n);
 
-    auto sfcKeys = coords.particleKeys().data();
-    // std::cout << "[neighborCheckMixD] Particles and sfcKeys:\n";
-    // for (size_t i = 0; i < n; ++i)
-    // {
-    //     std::cout << "Particle " << i << ": (" << coords.x()[i] << ", " << coords.y()[i] << ", " << coords.z()[i]
-    //               << ") ";
-    //     std::cout << "sfcKey: " << std::oct << sfcKeys[i] << std::dec << std::endl;
-    // }
-
     unsigned bucketSize   = 64;
-    auto [csTree, counts] = computeOctree(sfcKeys, sfcKeys + n, bucketSize);
+    auto [csTree, counts] = computeOctree<KeyType>(coords.particleKeys(), bucketSize);
     for (size_t i{}; i < csTree.size(); ++i)
     {
         std::cout << "csTree[" << i << "] = " << std::oct << csTree[i] << std::dec << " count: " << counts[i]
@@ -155,7 +146,7 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
     std::vector<LocalIndex> layout(nNodes(csTree) + 1);
     std::exclusive_scan(counts.begin(), counts.end() + 1, layout.begin(), 0);
 
-    gsl::span<const KeyType> nodeKeys(octree.prefixes.data(), octree.numNodes);
+    std::span<const KeyType> nodeKeys(octree.prefixes.data(), octree.numNodes);
     int number_of_non_zero_leaves{};
     std::cout << "nodeKeysMixD\n";
     for (size_t i = 0; i < csTree.size(); ++i)
@@ -170,6 +161,7 @@ void neighborCheckMixD(const Coordinates& coords, T radius, const Box<T>& box, u
     OctreeNsView<T, KeyType> nsView{octree.numLeafNodes,
                                     octree.prefixes.data(),
                                     octree.childOffsets.data(),
+                                    octree.parents.data(),
                                     octree.internalToLeaf.data(),
                                     octree.levelRange.data(),
                                     nullptr,
@@ -308,16 +300,13 @@ public:
 
         const auto mixDBits = getBoxMixDimensionBits<double, KeyTypeMixD, Box<double>>(box);
 
-        CoordinateKind<double, KeyType3D> coords3D(nParticles, box, 42);
-        CoordinateKind<double, KeyTypeMixD> coordsMixD(nParticles, box, 42, mixDBits.bx, mixDBits.by,
+        const CoordinateKind<double, KeyType3D> coords3D(nParticles, box, 42);
+        const CoordinateKind<double, KeyTypeMixD> coordsMixD(nParticles, box, 42, mixDBits.bx, mixDBits.by,
                                                        mixDBits.bz);
 
-        auto sfcKeys3D   = coords3D.particleKeys().data();
-        auto sfcKeysMixD = coordsMixD.particleKeys().data();
-
         unsigned bucketSize           = 64;
-        auto [csTree3D, counts3D]     = computeOctree(sfcKeys3D, sfcKeys3D + nParticles, bucketSize);
-        auto [csTreeMixD, countsMixD] = computeOctree(sfcKeysMixD, sfcKeysMixD + nParticles, bucketSize);
+        auto [csTree3D, counts3D]     = computeOctree<typename KeyType3D::ValueType>(coords3D.particleKeys(), bucketSize);
+        auto [csTreeMixD, countsMixD] = computeOctree<typename KeyTypeMixD::ValueType>(coordsMixD.particleKeys(), bucketSize);
 
         int number_of_non_zero_leaves_3D{};
         for (size_t i = 0; i < csTree3D.size(); ++i)

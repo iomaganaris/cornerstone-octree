@@ -83,6 +83,11 @@ HOST_DEVICE_FUN T computeVecMacR2(KeyType prefix, Vec3<T> expCenter, float invTh
 
     IBox cellBox              = use_mixD ? sfcIBox(sfcMixDKey(nodeKey), maxTreeLevel<KeyType>{} - (prefixLength / 3), mixDBits.bx, mixDBits.by, mixDBits.bz) : sfcIBox(sfcKey(nodeKey), prefixLength / 3);
     auto [geoCenter, geoSize] = centerAndSize<KeyType>(cellBox, box);
+    if (geoSize[0] == 0 && geoSize[1] == 0 && geoSize[2] == 0)
+    {
+        // if the cell is empty, we return a zero mac
+        return T(0);
+    }
 
     Vec3<T> dX = expCenter - geoCenter;
 
@@ -233,6 +238,11 @@ void markMacs(const KeyType* prefixes,
     for (TreeNodeIndex i = 0; i < numFocusNodes; ++i)
     {
         IBox target    = use_mixD ? sfcIBox(sfcMixDKey(focusNodes[i]), sfcMixDKey(focusNodes[i + 1]), mixDBits.bx, mixDBits.by, mixDBits.bz) : sfcIBox(sfcKey(focusNodes[i]), sfcKey(focusNodes[i + 1]));
+        if (target.xmin() == target.xmax() || target.ymin() == target.ymax() || target.zmin() == target.zmax())
+        {
+            // if the target is empty, we skip it
+            continue;
+        }
         IBox targetExt = IBox(target.xmin() - 1, target.xmax() + 1, target.ymin() - 1, target.ymax() + 1,
                               target.zmin() - 1, target.zmax() + 1);
         if (containedIn(focusStart, focusEnd, targetExt)) { continue; }
